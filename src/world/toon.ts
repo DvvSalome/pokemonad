@@ -1,6 +1,12 @@
-// Cel shading para todo el mundo: una rampa de bandas, una luz de borde (fresnel) y un contorno por
-// casco invertido. Portado de research/pokegrass-source/js/toon.js — es lo que le da a PokeGrass su
-// look de juego de monstruos portátil, y lo que unifica packs de assets distintos bajo una sola luz.
+// El sombreado de todo el mundo, en un solo sitio.
+//
+// HISTORIA: esto nació como el cel shading de PokeGrass/PokeScout (rampa de 4 bandas duras + contorno
+// marrón por casco invertido), que es exactamente la firma visual de aquel juego. Este proyecto tiene que
+// parecer otro, así que la dirección de arte cambió a "diorama de arcilla": la luz cae en una rampa
+// SUAVE con las sombras levantadas (volumen redondo, como plastilina bajo un foco), sin contornos, y la
+// profundidad la ponen la oclusión ambiental, el tone mapping y el desenfoque tilt-shift del postproceso
+// (ver Scene.tsx). Las funciones conservan el nombre `toon*` para no tocar a sus cien llamadores: lo que
+// cambia es lo que devuelven.
 //
 // Por qué importa: los GLB de naturaleza vienen con metalness 0.4 y normal maps, que bajo PBR los
 // dejan plásticos y ruidosos. Al convertirlos a toon se descarta metalness/roughness/normalMap y solo
@@ -21,43 +27,49 @@ export const occluder = {
   uOccOn: { value: 0 },
 };
 
-/** Rampa de 4 píxeles con NearestFilter: la luz cae en bandas duras en vez de degradar. */
-let ramp: THREE.DataTexture | null = null;
-export function toonRamp(): THREE.DataTexture {
-  if (ramp) return ramp;
-  const data = new Uint8Array([
-    90, 90, 90, 255,
-    170, 170, 170, 255,
-    235, 235, 235, 255,
-    255, 255, 255, 255,
-  ]);
-  ramp = new THREE.DataTexture(data, 4, 1, THREE.RGBAFormat);
-  ramp.minFilter = ramp.magFilter = THREE.NearestFilter;
-  ramp.generateMipmaps = false;
-  ramp.needsUpdate = true;
-  return ramp;
-}
+/**
+ * Interruptores de la dirección de arte. `outlines` en false apaga el contorno por casco invertido en todo
+ * el mundo (instancing.ts y toonifyObject lo consultan): el trazo marrón alrededor de cada roca y cada
+ * monstruo era, con las bandas, lo que más gritaba "PokeScout".
+ */
+export const STYLE = { outlines: false };
 
 /**
- * Rampa de los assets del pack. El coliseo son caras planas grandes y aguanta la rampa dura; el follaje y
- * las rocas del pack tienen normales muy variadas, y con la banda oscura al 35 % cada hoja y cada arista
- * quedaba recortada en claro/oscuro: eso era el "relieve" que los separaba del coliseo. Mismas cuatro
- * bandas, con la sombra más levantada.
+ * Rampa suave: 64 téxeles con filtrado lineal y una S tendida. MeshToonMaterial la muestrea con el
+ * half-lambert (n·l·0.5+0.5), así que el lado oscuro no cae a negro sino a ~30-40 %: la luz "envuelve" la
+ * forma como en una figura de arcilla, y el color de la sombra lo pone la luz hemisférica del cielo.
  */
+function smoothRamp(low: number, high: number, lift: number): THREE.DataTexture {
+  const N = 64;
+  const data = new Uint8Array(N * 4);
+  for (let i = 0; i < N; i++) {
+    const x = i / (N - 1);
+    // S suave centrada algo a la izquierda: más superficie en la parte iluminada que en la oscura.
+    const t = Math.min(1, Math.max(0, (x - 0.18) / 0.7));
+    const sm = t * t * (3 - 2 * t);
+    const v = Math.round(255 * (low + (high - low) * (lift * x + (1 - lift) * sm)));
+    data.set([v, v, v, 255], i * 4);
+  }
+  const tex = new THREE.DataTexture(data, N, 1, THREE.RGBAFormat);
+  tex.minFilter = tex.magFilter = THREE.LinearFilter;
+  tex.generateMipmaps = false;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+let ramp: THREE.DataTexture | null = null;
+/** La rampa de las piezas modeladas (coliseos, props, personajes): con algo más de contraste. */
+export function toonRamp(): THREE.DataTexture {
+  return (ramp ??= smoothRamp(0.3, 1, 0.2));
+}
+
 let softRamp: THREE.DataTexture | null = null;
+/**
+ * La rampa de la vegetación y las rocas: más tendida todavía. El follaje son cartas con normales muy
+ * variadas, y cualquier contraste fuerte en la rampa lo convierte en ruido de claro/oscuro.
+ */
 export function toonRampSoft(): THREE.DataTexture {
-  if (softRamp) return softRamp;
-  const data = new Uint8Array([
-    138, 138, 138, 255,
-    190, 190, 190, 255,
-    232, 232, 232, 255,
-    250, 250, 250, 255,
-  ]);
-  softRamp = new THREE.DataTexture(data, 4, 1, THREE.RGBAFormat);
-  softRamp.minFilter = softRamp.magFilter = THREE.NearestFilter;
-  softRamp.generateMipmaps = false;
-  softRamp.needsUpdate = true;
-  return softRamp;
+  return (softRamp ??= smoothRamp(0.42, 1, 0.35));
 }
 
 /**
@@ -67,7 +79,9 @@ export function toonRampSoft(): THREE.DataTexture {
  * muestrear la textura, porque un tinte multiplicativo no puede desaturar un canal que vale 0.
  */
 export interface Grade { saturation: number; value: number; warm: number }
-export const WORLD_GRADE: Grade = { saturation: 0.8, value: 0.92, warm: 1 };
+// Más saturación que antes (0.8): el tone mapping AgX del postproceso desatura los tonos altos, y con
+// la gradación anterior los verdes del MegaKit llegaban a pantalla grises.
+export const WORLD_GRADE: Grade = { saturation: 1.08, value: 1, warm: 0.6 };
 
 export interface ToonOptions {
   rim?: number;
@@ -106,7 +120,7 @@ export function toonMaterial(
   // rim en 0 por defecto: la luz de borde suma blanco según el ángulo de vista, así que "se mueve" con la
   // cámara — un candidato de parpadeo blanco que sobrevivía incluso con sombras/bloom/oclusor apagados.
   // Cero por ahora para aislar. Restaurar a ~0.12 una vez confirmado que no era esto.
-  { rim = 0.12, rimColor = 0xffffff, emissive = 0x000000, opacity = 1, map = null, vertexColors = false, alphaTest = 0, occlude = true, grade, soft = false }: ToonOptions = {},
+  { rim = 0.16, rimColor = 0xffe2b8, emissive = 0x000000, opacity = 1, map = null, vertexColors = false, alphaTest = 0, occlude = true, grade, soft = false }: ToonOptions = {},
 ): THREE.MeshToonMaterial {
   const m = new THREE.MeshToonMaterial({
     color,
@@ -156,7 +170,7 @@ export function toonMaterial(
         '#include <opaque_fragment>',
         `
         float rimF = 1.0 - clamp(dot(normalize(normal), normalize(vViewPosition)), 0.0, 1.0);
-        rimF = smoothstep(0.55, 1.0, rimF);
+        rimF = smoothstep(0.45, 1.0, rimF);
         outgoingLight += uRimColor * rimF * uRim;
         #include <opaque_fragment>`,
       );
@@ -319,7 +333,7 @@ export function toonifyObject(
     const first = (Array.isArray(mesh.material) ? mesh.material[0] : mesh.material) as THREE.MeshToonMaterial;
     // Igual que en instancing.ts: nada de contorno en cartas recortadas por alfa, el casco invertido solo
     // tiene sentido en geometría sólida.
-    if (outline <= 0 || first.alphaTest > 0) continue;
+    if (!STYLE.outlines || outline <= 0 || first.alphaTest > 0) continue;
     mesh.getWorldScale(worldScale);
     const meanScale = (Math.abs(worldScale.x) + Math.abs(worldScale.y) + Math.abs(worldScale.z)) / 3;
     const width = outline / Math.max(1e-4, meanScale);

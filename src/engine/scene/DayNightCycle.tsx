@@ -48,8 +48,10 @@ const SUN_OFFSET = new THREE.Vector3(52, 74, 38);
 
 /** Ancho del frustum de la cámara de sombras (±60, ver shadow-camera-left/right más abajo) y resolución
  * de su mapa: juntos definen cuánto mundo cubre cada texel, que es el paso de la rejilla de encaje. */
-const SHADOW_FRUSTUM_SIZE = 120;
-const SHADOW_MAP_RES = 2048;
+const SHADOW_FRUSTUM_SIZE = 96;
+// 4096 y ±48 m (antes 2048 y ±60): sin las bandas del cel shading las sombras son lo único con borde
+// duro en pantalla, y a 6 cm por téxel se leían escalonadas. Ahora son 2.3 cm.
+const SHADOW_MAP_RES = 4096;
 const SHADOW_TEXEL = SHADOW_FRUSTUM_SIZE / SHADOW_MAP_RES;
 function snapToShadowTexel(x: number, z: number): { x: number; z: number } {
   return { x: Math.round(x / SHADOW_TEXEL) * SHADOW_TEXEL, z: Math.round(z / SHADOW_TEXEL) * SHADOW_TEXEL };
@@ -218,11 +220,11 @@ export const DayNightCycle: React.FC<DayNightCycleProps> = ({ enabled = true, ta
         intensity={1.65}
         color="#fff6e0"
         castShadow={castShadow}
-        shadow-mapSize={[2048, 2048]}
-        shadow-camera-left={-60}
-        shadow-camera-right={60}
-        shadow-camera-top={60}
-        shadow-camera-bottom={-60}
+        shadow-mapSize={[SHADOW_MAP_RES, SHADOW_MAP_RES]}
+        shadow-camera-left={-SHADOW_FRUSTUM_SIZE / 2}
+        shadow-camera-right={SHADOW_FRUSTUM_SIZE / 2}
+        shadow-camera-top={SHADOW_FRUSTUM_SIZE / 2}
+        shadow-camera-bottom={-SHADOW_FRUSTUM_SIZE / 2}
         shadow-camera-near={1}
         shadow-camera-far={200}
         shadow-normalBias={0.35}

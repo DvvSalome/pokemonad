@@ -8,7 +8,7 @@
 // las mallas en negro. Unos pocos clones de material cuestan menos que ese riesgo.
 import * as THREE from 'three';
 import type { ModelSet } from './modelLoader';
-import { outlineMaterial, toonFromMaterial, OUTLINE_COLOR } from './toon';
+import { outlineMaterial, toonFromMaterial, OUTLINE_COLOR, STYLE } from './toon';
 
 /**
  * Tinte por rol de material. Los packs nombran sus materiales por parte (`PineTree_Bark`,
@@ -125,7 +125,7 @@ export function buildInstanced(
       // la copa se llena de manchas con forma de hoja. El alphaTest marca justo esas partes, así que sirve
       // para distinguirlas: contorno en troncos y rocas, nunca en hojas.
       const isCutoutCard = source.alphaTest > 0;
-      if (outline <= 0 || isCutoutCard) continue;
+      if (!STYLE.outlines || outline <= 0 || isCutoutCard) continue;
       const lineMaterial = outlineMaterial(outlineWidthFor(group, outline), outlineColor);
       const line = new THREE.InstancedMesh(part.geometry, lineMaterial, group.length);
       for (let i = 0; i < matrices.length; i++) line.setMatrixAt(i, matrices[i]);

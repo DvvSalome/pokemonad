@@ -1,6 +1,9 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { EffectComposer, Vignette, HueSaturation } from '@react-three/postprocessing';
+import {
+  EffectComposer, Vignette, HueSaturation, BrightnessContrast, N8AO, Bloom, TiltShift2, ToneMapping, SMAA,
+} from '@react-three/postprocessing';
+import { ToneMappingMode } from 'postprocessing';
 import * as THREE from 'three';
 import { Ground } from './world/Ground';
 import { Player } from './world/Player';
@@ -147,14 +150,31 @@ export const Scene: React.FC<SceneProps> = ({ mode, characterConfig, explore = f
           </>
         )}
         <ParticulasClima centroRef={focusRef} />
-        {/* Bloom QUITADO: era la causa del parpadeo blanco. Medido — renderizando por el EffectComposer
-            aparecían frames enteros en blanco (100%) de forma intermitente durante el movimiento; con
-            render directo (sin composer) nunca. El Bloom con mipmapBlur ocasionalmente reventaba toda la
-            pantalla a blanco. HueSaturation + Vignette se quedan: son transformaciones de color por píxel,
-            deterministas, no pueden producir un frame blanco. */}
-        <EffectComposer>
-          <HueSaturation saturation={0.04} hue={0} />
-          <Vignette eskil={false} offset={0.22} darkness={0.28} />
+        {/* El look del mundo se decide aquí, no en los materiales. Dirección de arte "diorama de arcilla":
+              · N8AO: oclusión ambiental en pantalla. Es lo que más profundidad da — cada roca, árbol y
+                monstruo se asienta en el suelo con su sombra de contacto, y las esquinas se oscurecen. Va
+                teñida de violeta noche, no de negro, para que la sombra tenga color.
+              · Bloom suave y alto (umbral 0.9, sin mipmapBlur): solo brillan el sol, las antorchas, el
+                neón y los fuegos fatuos. El parpadeo blanco que se midió hace tiempo venía de la variante
+                con mipmapBlur sobre el rim blanco puro; el rim ahora es cálido y tenue.
+              · TiltShift2: desenfoca la franja de arriba y la de abajo. Es el efecto "maqueta en miniatura"
+                y lo que más separa este mundo de un juego de monstruos portátil.
+              · ACES: tone mapping de cine, que comprime los altos sin quemarlos y da el contraste de
+                película. Se probó AgX y dejaba el mundo lechoso: con estas luces pedía demasiado contraste
+                de vuelta. Detrás, saturación y contraste extra, que ACES también se come un poco.
+            El orden importa: la AO va sobre la escena lineal, el desenfoque antes del tone mapping, el
+            antialias al final. */}
+        {/* En móvil la AO baja a su calidad más barata y el tilt-shift se quita: medido en escritorio, la
+            cadena completa cuesta ~14.5 ms por frame, y en una GPU de teléfono eso no cabe en 60 fps. */}
+        <EffectComposer multisampling={0}>
+          <N8AO aoRadius={2.6} distanceFalloff={1.2} intensity={2.6} quality={showJoystick ? 'performance' : 'medium'} color="#1c0a2e" halfRes />
+          <Bloom intensity={0.38} luminanceThreshold={0.88} luminanceSmoothing={0.25} />
+          <TiltShift2 blur={showJoystick ? 0 : 0.07} taper={0.7} samples={showJoystick ? 2 : 8} />
+          <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
+          <HueSaturation saturation={0.28} hue={0} />
+          <BrightnessContrast brightness={0.02} contrast={0.16} />
+          <Vignette eskil={false} offset={0.3} darkness={0.5} />
+          <SMAA />
         </EffectComposer>
       </Canvas>
       {showJoystick && playing && <MobileJoystick inputRef={joystickRef} />}
