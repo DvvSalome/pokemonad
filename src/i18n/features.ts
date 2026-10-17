@@ -57,8 +57,8 @@ export const fen = {
   'dx.stage': 'stage {n}', 'dx.by': 'found by {name}', 'dx.empty': 'Nothing here yet.', 'dx.more': 'Load more',
 
   'sh.share': 'Share on X',
-  'sh.text': 'I just caught {name} in PokeScout · Monad Edition! 🌿',
-  'sh.textToken': 'I just caught ${symbol} as {name} in PokeScout · Monad Edition — every Monad token is a wild monster! 🌿',
+  'sh.text': 'I just caught {name} in PokeMonad! 🌿',
+  'sh.textToken': 'I just caught ${symbol} as {name} in PokeMonad — every Monad token is a wild monster! 🌿',
   'lg.banner': '⚡ Legendary **{name}** is on Legend Summit · **{time}**',
   'tok.perkLeague': '+{p}% league points', 'tok.perkRadar': 'Rare Radar always on', 'tok.perkSummit': 'Legend Summit free',
   'tok.bountyGolden': 'whoever catches it first', 'tok.bountyLegend': 'first to catch each scheduled legendary',
@@ -123,8 +123,8 @@ export const fes: Record<FKey, string> = {
   'dx.stage': 'etapa {n}', 'dx.by': 'lo descubrió {name}', 'dx.empty': 'Aquí no hay nada todavía.', 'dx.more': 'Cargar más',
 
   'sh.share': 'Compartir en X',
-  'sh.text': '¡Acabo de atrapar a {name} en PokeScout · Monad Edition! 🌿',
-  'sh.textToken': '¡Acabo de atrapar ${symbol} como {name} en PokeScout · Monad Edition — cada token de Monad es un monstruo salvaje! 🌿',
+  'sh.text': '¡Acabo de atrapar a {name} en PokeMonad! 🌿',
+  'sh.textToken': '¡Acabo de atrapar ${symbol} como {name} en PokeMonad — cada token de Monad es un monstruo salvaje! 🌿',
   'lg.banner': '⚡ El legendario **{name}** está en Legend Summit · **{time}**',
   'tok.perkLeague': '+{p}% de puntos de liga', 'tok.perkRadar': 'Rare Radar siempre activo', 'tok.perkSummit': 'Legend Summit gratis',
   'tok.bountyGolden': 'para quien lo atrape primero', 'tok.bountyLegend': 'el primero en atrapar cada legendario del horario',

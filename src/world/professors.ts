@@ -1,4 +1,4 @@
-// Profesores de campo: monstruos de PokeScout repartidos por toda la región. La lección no se lee
+// Profesores de campo: monstruos de PokeMonad repartidos por toda la región. La lección no se lee
 // al acercarse: solo se abre cuando la captura tiene éxito.
 import { PLACES, coliseumDist, COLISEUM } from './terrain';
 import { SPECIES_CATALOG, type Spawn } from './species';

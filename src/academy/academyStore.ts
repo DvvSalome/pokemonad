@@ -1,7 +1,7 @@
 // El estado del Coliseo Monad: la puerta, la elección de jefe y el combate de preguntas.
 //
 // Mismo patrón que el resto de stores del juego (useSyncExternalStore sobre un objeto mutable, sin
-// dependencias) y, a propósito, MISMA ESTRUCTURA que battleStore.ts del combate original de PokeScout:
+// dependencias) y, a propósito, MISMA ESTRUCTURA que battleStore.ts del combate original:
 //
 //   · startBattle abre una cortinilla; a mitad de ella (WIPE_SWAP_MS, cuando la pantalla está tapada del
 //     todo) la vista pasa del mundo a la arena y empieza la presentación; al acabarla se pregunta.

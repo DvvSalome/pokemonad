@@ -86,11 +86,11 @@ export const LandingScreen: React.FC<Props> = ({ onPlay }) => {
       </header>
 
       <main className="pg-title-main">
-        <h1 className="pg-logo" aria-label="PokeScout">
+        <h1 className="pg-logo" aria-label="PokeMonad">
           <LogoLine cls="l1" text="POKE" at={0} />
-          <LogoLine cls="l2" text="SCOUT" at={4} />
+          <LogoLine cls="l2" text="MONAD" at={4} />
         </h1>
-        <div className="pg-logo-ribbon">MONAD EDITION</div>
+        <div className="pg-logo-ribbon">ON MONAD</div>
         <p className="pg-title-tag">{t('title.tag')}</p>
 
         <button className="pg-play" onClick={onPlay}>

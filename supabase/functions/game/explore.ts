@@ -274,7 +274,7 @@ export function makeExplore(c: XCtx) {
       case 'progress-answer': return answer(t, Number(body.boss), String(body.questionId ?? ''), !!body.ok, es);
       case 'progress-battle': return battle(t, Number(body.boss), !!body.win, String(body.name ?? ''), es);
       case 'progress-catch': return caught(t, String(body.id ?? ''), String(body.name ?? ''), es);
-      case 'coin-buy': return coinBuy(t, String(body.item ?? ''));
+      case 'coin-buy': throw fail('the Mart only accepts MON', 410);
       case 'mon-buy': return monBuy(t, String(body.item ?? ''), Number(body.count ?? 1), String(body.txHash ?? ''), es);
       default: return undefined;
     }

@@ -1,5 +1,5 @@
 // Carta coleccionable vertical estilo Pokémon (ratio ~2.5:3.5), tamaño grande 900×1260.
-// Anatomía clásica (HP, arte, ataques, debilidad) con identidad PokeScout: marco Arc azul/oro,
+// Anatomía clásica (HP, arte, ataques, debilidad) con identidad PokeMonad: marco Arc azul/oro,
 // nunca amarillo cartón. Título $SYMBOL si hay token. Legendarios en face medianoche.
 import { TYPE_COLORS, type MonType, type Tier, type Species } from '../world/species';
 import { fighter, MOVE_NAME, weakTo, resists } from '../world/battleMath';
@@ -103,7 +103,7 @@ export interface CardData {
 
 const usd = (n: number) => (n >= 1e6 ? `$${(n / 1e6).toFixed(2)}M` : n >= 1e3 ? `$${(n / 1e3).toFixed(1)}K` : `$${Math.round(n)}`);
 
-/** Carta vertical estilo Pokémon · PokeScout. `t` = fase foil. */
+/** Carta vertical estilo Pokémon · PokeMonad. `t` = fase foil. */
 export async function drawCard(c: CardData, { t = 0 }: { t?: number } = {}): Promise<HTMLCanvasElement> {
   await fonts();
   const cv = document.createElement('canvas'); cv.width = CW; cv.height = CH;
@@ -114,7 +114,7 @@ export async function drawCard(c: CardData, { t = 0 }: { t?: number } = {}): Pro
   const L = rar === 'Legendary';
   const gold = rar === 'Epic' || L;
   const level = c.level || 5, f = fighter(sp.id, level);
-  const zone = tk(`card.zone.${sp.zone}`, ZONE_LABEL[sp.zone] || 'PokeScout');
+  const zone = tk(`card.zone.${sp.zone}`, ZONE_LABEL[sp.zone] || 'PokeMonad');
   const seed = hash32(sp.id + '|poke-v5');
   const title = c.token ? `$${c.token.symbol}` : sp.name;
   const pal = L
@@ -300,7 +300,7 @@ export async function drawCard(c: CardData, { t = 0 }: { t?: number } = {}): Pro
   // —— pie ——
   const by = CH - 58;
   g.fillStyle = pal.ink; g.font = "700 15px 'Nunito', sans-serif"; g.textAlign = 'left';
-  g.fillText(`PokeScout · Arc${c.shiny ? ' · ✨ Shiny' : ''}`, 76, by);
+  g.fillText(`PokeMonad${c.shiny ? ' · ✨ Shiny' : ''}`, 76, by);
   g.textAlign = 'right'; g.font = "800 17px 'Nunito', sans-serif";
   g.fillText(`${String(c.dexNo).padStart(3, '0')}/${String(c.total || 26).padStart(3, '0')}  ${RARITY_SYM[rar]}`, CW - 76, by);
   g.textAlign = 'left';

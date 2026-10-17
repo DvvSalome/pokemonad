@@ -1,6 +1,6 @@
 {
-  "name": "PokeScout · Arc Edition",
-  "short_name": "PokeScout",
+  "name": "PokeMonad",
+  "short_name": "PokeMonad",
   "description": "Catch real tokens as monsters, battle gyms and trainers, trade cards on Arc.",
   "start_url": "/",
   "scope": "/",

@@ -1,4 +1,4 @@
-// El servidor de PokeGrass Arc Edition. Una sola función con acciones (POST {action, ...}); la sesión va en
+// El servidor de PokeMonad. Una sola función con acciones (POST {action, ...}); la sesión va en
 // la cabecera `x-session` (token aleatorio; en la base solo su sha256). Es la única autoridad del juego:
 // qué salvajes hay, si una bola atrapa, cuánto daño hace un ataque, cuántas bolas te quedan y los puntos.
 // La base (RLS sin políticas) solo se toca desde aquí con la clave de servicio.
@@ -825,7 +825,7 @@ async function guest(name?: string) {
 }
 
 const signMessage = (address: string, nonce: string) =>
-  `PokeGrass on Arc wants you to sign in.\n\nWallet: ${address}\nNonce: ${nonce}\n\nThis only proves you own this wallet. It costs nothing.`;
+  `PokeMonad on Monad wants you to sign in.\n\nWallet: ${address}\nNonce: ${nonce}\n\nThis only proves you own this wallet. It costs nothing.`;
 
 async function walletNonce(address: string) {
   if (!/^0x[0-9a-fA-F]{40}$/.test(address)) throw new Fail('bad address');

@@ -160,7 +160,7 @@ export const en = {
   'event.appeared': '✨ A **Golden Monster** appeared in {place} · {time}',
 
   // ---------- Mart ----------
-  'mart.title': 'PokeScout Mart',
+  'mart.title': 'PokeMonad Mart',
   'mart.note': 'Prices in {symbol} on {chain}. You pay from your own wallet and the item arrives as soon as the network confirms it.',
   'mart.faucetPre': 'Test network: get free test {symbol} at',
   'mart.faucetLink': 'Get test {symbol} at faucet.circle.com ↗',
@@ -292,7 +292,7 @@ export const en = {
 
   // ---------- carta ----------
   'card.basic': 'BASIC',
-  'card.scoutFile': 'SCOUT FILE',
+  'card.scoutFile': 'MONAD FILE',
   'card.legendary': '★  LEGENDARY  ★',
   'card.weakness': 'weakness',
   'card.resistance': 'resistance',
@@ -503,7 +503,7 @@ export const en = {
   'legal.date': 'September 28, 2026',
   'legal.draft': 'DRAFT — not yet reviewed by a lawyer. These texts are placeholders and may change before real-money prizes start.',
   'legal.terms.h1': '1. The game',
-  'legal.terms.p1': 'PokeScout · Monad Edition ("the game") is a free-to-play browser game. Wild monsters are generated from public token data on the Monad network; they are game items, not tokens, and have no monetary value.',
+  'legal.terms.p1': 'PokeMonad ("the game") is a free-to-play browser game. Wild monsters are generated from public token data on the Monad network; they are game items, not tokens, and have no monetary value.',
   'legal.terms.h2': '2. Accounts',
   'legal.terms.p2': 'You can play as a guest, with a recovery key, or by linking a wallet with a free signature. You are responsible for keeping your recovery key and wallet safe. We never ask for your private key or seed phrase — anyone who does is not us.',
   'legal.terms.h3': '3. Purchases',
@@ -647,7 +647,7 @@ export const en = {
   'pitch.kicker': 'Monad',
   'pitch.problem': 'The problem',
   'pitch.title': 'A new token does not get found. You have to already know where to look.',
-  'pitch.body': 'On Monad it is born inside an explorer, and learning the chain means reading docs. PokeScout turns the network into a region: every token is a monster you walk up to, and the Colosseum proves it with a real transaction — gas here is almost free — and a soulbound badge that cannot be sold.',
+  'pitch.body': 'On Monad it is born inside an explorer, and learning the chain means reading docs. PokeMonad turns the network into a region: every token is a monster you walk up to, and the Colosseum proves it with a real transaction — gas here is almost free — and a soulbound badge that cannot be sold.',
   'pitch.dismiss': 'Got it',
   'pitch.reopen': 'Why Monad',
   'map.region': 'Region',

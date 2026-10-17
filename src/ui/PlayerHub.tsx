@@ -1,16 +1,15 @@
 // Lo del jugador fuera del combate: su ficha (nivel, experiencia, monedas), el Poké Mart y los avisos de
 // experiencia que saltan al responder bien o atrapar a un profesor.
 //
-// El Mart es el de PokeScout en espíritu —un mostrador de bolas con su precio— pero con las bolas pintadas
+// El Mart es el de PokeMonad en espíritu —un mostrador de bolas con su precio— pero con las bolas pintadas
 // de verdad (esfera con brillo, franja y botón, flotando) y packs con descuento. El perfil es el cuaderno
 // del alumno: nivel y título, la barra de XP, lo que ha acertado, las insignias del Coliseo Monad y los
 // apuntes de cada profesor atrapado.
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { BALLS, BALL_ORDER, type BallKey } from '../world/species';
-import { addBalls, useCapture } from '../world/captureStore';
-import { addBuff } from '../world/buffs';
+import { useCapture } from '../world/captureStore';
 import {
-  REWARD, levelOf, spend, titleOf, useProgress, useToasts,
+  levelOf, titleOf, useProgress, useToasts,
 } from '../world/progressStore';
 import { PROFESSORS, professorLesson } from '../world/professors';
 import { BOSSES } from '../academy/questions';
@@ -19,10 +18,9 @@ import { portrait } from '../world/portrait';
 import type { RosterEntry } from '../engine/avatar/characterRoster';
 import { formatEther } from 'viem';
 import { useLang } from '../i18n';
-import { isOnline } from '../../lib/api';
 import { useOnline } from '../world/online';
 import { connect as connectWallet, shortAddr, useWallet } from '../world/walletStore';
-import { buyWithCoins, buyWithMon, clearPay, loadMonMart, payBusy, syncFromServer, syncReady, useMonMart, usePay, useSync } from '../world/hubSync';
+import { buyWithMon, clearPay, loadMonMart, payBusy, syncFromServer, syncReady, useMonMart, usePay, useSync } from '../world/hubSync';
 import './hub.css';
 
 // ---------------------------------------------------------------- textos (es/en)
@@ -30,7 +28,7 @@ import './hub.css';
 const TX = {
   es: {
     mart: 'Poké Mart', bag: 'Tu bolsa', coins: 'monedas', buy: 'Comprar', poor: 'Te faltan monedas',
-    earn: `Gana monedas respondiendo bien en el Coliseo Monad (+${REWARD.correct.coins}), venciendo jefes (+${REWARD.win.coins}) y atrapando profesores (+${REWARD.catch.coins}).`,
+    earn: 'Todo el Mart se paga en MON de Monad: la wallet firma, el servidor verifica la transacción y te entrega las bolas.',
     power: 'Potencia', sure: 'Captura segura', got: '¡A la bolsa!', radar: 'Radar de raros', radarDesc: 'Durante 20 min ves a los raros desde lejos.',
     profile: 'Perfil', level: 'Nivel', xp: 'XP', next: 'para el nivel', stats: 'Estadísticas', badges: 'Insignias del Coliseo Monad',
     correct: 'Aciertos', accuracy: 'Precisión', streak: 'Mejor racha', wins: 'Jefes vencidos', catches: 'Profesores', fights: 'Combates',
@@ -43,7 +41,7 @@ const TX = {
   },
   en: {
     mart: 'Poké Mart', bag: 'Your bag', coins: 'coins', buy: 'Buy', poor: 'Not enough coins',
-    earn: `Earn coins by answering right in the Monad Colosseum (+${REWARD.correct.coins}), beating bosses (+${REWARD.win.coins}) and catching professors (+${REWARD.catch.coins}).`,
+    earn: 'The whole Mart is paid in Monad MON: your wallet signs, the server verifies the transaction and delivers your balls.',
     power: 'Power', sure: 'Sure catch', got: 'Into the bag!', radar: 'Rare Radar', radarDesc: 'For 20 min, rare ones show from far away.',
     profile: 'Profile', level: 'Level', xp: 'XP', next: 'to level', stats: 'Stats', badges: 'Monad Colosseum badges',
     correct: 'Correct', accuracy: 'Accuracy', streak: 'Best streak', wins: 'Bosses beaten', catches: 'Professors', fights: 'Battles',
@@ -110,24 +108,19 @@ function useCount(target: number, ms = 500) {
   return Math.round(v);
 }
 
-const Coin: React.FC<{ size?: number }> = ({ size = 18 }) => <i className="coin" style={{ width: size, height: size }} aria-hidden />;
-
 export const Mart: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const tx = useTx();
   const p = useProgress();
   const cap = useCapture();
-  const coins = useCount(p.coins);
   const [flash, setFlash] = useState<{ id: string; n: number } | null>(null);
   const [bump, setBump] = useState<{ kind: string; n: number } | null>(null);
-  const [note, setNote] = useState('');
-  const [mode, setMode] = useState<'coins' | 'mon'>('coins');
   const mon = useMonMart();
   const pay = usePay();
   const sync = useSync();
   const wallet = useWallet();
 
   useEffect(() => { void loadMonMart(); clearPay(); }, [wallet.address]);
-  useEffect(() => { if (mode === 'mon' && !mon) void loadMonMart(); }, [mode, mon]);
+  useEffect(() => { if (!mon) void loadMonMart(); }, [mon]);
 
   const celebrate = (g: Good) => {
     const n = Date.now();
@@ -144,18 +137,7 @@ export const Mart: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     }
   }, [pay.phase, pay.item, pay.hash]);
 
-  const buy = async (g: Good) => {
-    if (mode === 'mon') { setNote(''); void buyWithMon(g.id); return; }
-    if (syncReady() && isOnline()) {
-      if (!(await buyWithCoins(g.id))) { setNote(tx.poor); return; }
-    } else {
-      if (!spend(g.cost)) { setNote(tx.poor); return; }
-      if (g.kind === 'radar') addBuff('radar', 20);
-      else addBalls({ [g.kind]: g.qty });
-    }
-    setNote('');
-    celebrate(g);
-  };
+  const buy = (g: Good) => { void buyWithMon(g.id); };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -169,11 +151,7 @@ export const Mart: React.FC<{ onClose: () => void }> = ({ onClose }) => {
         <div className="awning" aria-hidden />
         <header>
           <div className="sign"><b>{tx.mart}</b></div>
-          <div className="paymode" role="tablist">
-            <button className={mode === 'coins' ? 'on' : ''} onClick={() => setMode('coins')}><Coin size={14} /> {tx.payCoins}</button>
-            <button className={mode === 'mon' ? 'on' : ''} onClick={() => setMode('mon')}><i className="mon" aria-hidden>M</i> {tx.payMon}</button>
-          </div>
-          <span className="purse"><Coin size={22} /><b>{coins}</b><small>{tx.coins}</small></span>
+          <span className="purse"><i className="mon" aria-hidden>M</i><b>{wallet.usdc ?? '—'}</b><small>MON</small></span>
           <button className="x" onClick={onClose} aria-label={tx.close}>✕</button>
         </header>
 
@@ -182,13 +160,13 @@ export const Mart: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             const isBall = g.kind !== 'radar';
             const monItem = mon?.items.find((i) => i.item === g.id);
             const monPrice = monItem?.priceMon ?? MON_FALLBACK[g.id];
-            const afford = mode === 'mon' ? !payBusy() : p.coins >= g.cost;
+            const afford = !payBusy();
             const save = g.base ? Math.round((1 - g.cost / g.base) * 100) : 0;
             const mult = isBall ? BALLS[g.kind as BallKey].mult : 0;
             return (
               <div
                 key={g.id}
-                className={`good${afford || mode === 'mon' ? '' : ' poor'}${pay.phase !== 'idle' && pay.item === g.id && mode === 'mon' ? ' paying' : ''}`}
+                className={`good${pay.phase !== 'idle' && pay.item === g.id ? ' paying' : ''}`}
                 style={{ ['--i' as string]: i, ['--c' as string]: isBall ? hex(BALLS[g.kind as BallKey].color) : '#4fd1c5' }}
               >
                 {/* Destello de compra: lleva la marca de tiempo como key para repetirse en cada compra. */}
@@ -209,10 +187,8 @@ export const Mart: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                 <b className="nm">{isBall ? BALLS[g.kind as BallKey].name : tx.radar}</b>
                 <small className="ds">{isBall ? tx.descs[g.kind as BallKey] : tx.radarDesc}</small>
                 {isBall && <span className="pw">{mult === Infinity ? tx.sure : `${tx.power} ×${mult}`}</span>}
-                <button className="price" disabled={!afford} onClick={() => void buy(g)}>
-                  {mode === 'mon'
-                    ? <><i className="mon" aria-hidden>M</i> {monPrice}</>
-                    : <><Coin /> {g.cost}</>}
+                <button className="price" disabled={!afford} onClick={() => buy(g)}>
+                  <i className="mon" aria-hidden>M</i> {monPrice}
                 </button>
                 {flash?.id === g.id && <span className="pop" key={flash.n}>{tx.got}</span>}
               </div>
@@ -233,8 +209,8 @@ export const Mart: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             </div>
           </div>
           <p className={`earn${pay.phase !== 'idle' ? ' pay ' + pay.phase : ''}`}>
-            {pay.phase === 'idle' || mode === 'coins'
-              ? (note ? <span className="warn">{note}</span> : (mode === 'mon' ? tx.monHint : tx.earn))
+            {pay.phase === 'idle'
+              ? tx.earn
               : (
                 <>
                   {pay.phase === 'error' ? <span className="warn">{pay.msg}</span>
@@ -244,7 +220,6 @@ export const Mart: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                   {pay.faucet && <> <a href="https://faucet.monad.xyz" target="_blank" rel="noreferrer">{tx.faucet} ↗</a></>}
                 </>
               )}
-            {sync.ready && mode === 'coins' && !note && <small className="saved"> · {tx.saved}</small>}
           </p>
         </footer>
       </div>
@@ -335,7 +310,6 @@ export const Profile: React.FC<{ character: RosterEntry; onClose: () => void }> 
             <small>{lv.need - lv.into} {tx.xp} {tx.next} {lv.level + 1}</small>
           </div>
           <div className="mini">
-            <span><Coin /> <b>{p.coins}</b> {tx.coins}</span>
             <span>✦ <b>{p.xp}</b> {tx.xp}</span>
           </div>
           {(wallet.address ?? academy.address) && <code className="addr">{shortAddr(wallet.address ?? academy.address!)}</code>}
@@ -378,7 +352,7 @@ export const Profile: React.FC<{ character: RosterEntry; onClose: () => void }> 
               {p.log.slice(0, 6).map((a) => (
                 <li key={a.t + a.text}>
                   <span>{a.text}</span>
-                  <b>+{a.xp} {tx.xp}{a.coins ? <> · +{a.coins} <Coin size={12} /></> : null}</b>
+                  <b>+{a.xp} {tx.xp}</b>
                   <small>{ago(a.t, es)}</small>
                 </li>
               ))}
@@ -399,7 +373,6 @@ export const PlayerHub: React.FC<{ character: RosterEntry }> = ({ character }) =
   const cap = useCapture();
   const lv = levelOf(p.xp);
   const pic = usePortrait(character.modelo_url);
-  const coins = useCount(p.coins);
   const [open, setOpen] = useState<null | 'mart' | 'profile'>(null);
   const wallet = useWallet();
   const online = useOnline();
@@ -424,7 +397,7 @@ export const PlayerHub: React.FC<{ character: RosterEntry }> = ({ character }) =
         <button className="shop" onClick={() => setOpen('mart')}>
           <Ball kind="ball" size={22} />
           <span>{tx.mart}</span>
-          <em><Coin size={14} /> {coins}</em>
+          {wallet.usdc && <em><i className="mon" aria-hidden>M</i> {wallet.usdc}</em>}
         </button>
         <button className={`wal${wallet.status === 'connected' ? ' on' : ''}`} disabled={wallet.status === 'connecting'}
           onClick={() => { if (wallet.status !== 'connected') void connectWallet(); else setOpen('profile'); }}
@@ -461,7 +434,6 @@ export const ProgressToasts: React.FC = () => {
         ) : (
           <div key={t.id} className="hb-toast">
             <b>+{t.xp} {tx.xp}</b>
-            {t.coins > 0 && <em><Coin size={14} /> +{t.coins}</em>}
             <span>{t.text}</span>
           </div>
         )

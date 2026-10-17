@@ -1,6 +1,6 @@
 // El sombreado de todo el mundo, en un solo sitio.
 //
-// HISTORIA: esto nació como el cel shading de PokeGrass/PokeScout (rampa de 4 bandas duras + contorno
+// HISTORIA: esto nació como el cel shading del juego original (rampa de 4 bandas duras + contorno
 // marrón por casco invertido), que es exactamente la firma visual de aquel juego. Este proyecto tiene que
 // parecer otro, así que la dirección de arte cambió a "diorama de arcilla": la luz cae en una rampa
 // SUAVE con las sombras levantadas (volumen redondo, como plastilina bajo un foco), sin contornos, y la
@@ -30,7 +30,7 @@ export const occluder = {
 /**
  * Interruptores de la dirección de arte. `outlines` en false apaga el contorno por casco invertido en todo
  * el mundo (instancing.ts y toonifyObject lo consultan): el trazo marrón alrededor de cada roca y cada
- * monstruo era, con las bandas, lo que más gritaba "PokeScout".
+ * monstruo era, con las bandas, lo que más gritaba "juego original".
  */
 export const STYLE = { outlines: false };
 
