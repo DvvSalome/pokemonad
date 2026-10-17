@@ -82,7 +82,7 @@ function makeState() {
   };
 }
 
-export const CaptureBall: React.FC = () => {
+export const CaptureBall: React.FC<{ quiet?: boolean }> = ({ quiet = false }) => {
   const cap = useCapture();
   const { camera, gl } = useThree();
   const holder = useRef<THREE.Group>(null);
@@ -264,7 +264,17 @@ export const CaptureBall: React.FC = () => {
       S.fovOff = lerpExp(S.fovOff, 0, dt, 3);
     }
 
-    g.visible = visible;
+    g.visible = visible && !quiet;
+    if (quiet) {
+      fx.beam.hide();
+      fx.add.points.visible = false;
+      fx.soft.points.visible = false;
+      fx.flashes.group.visible = false;
+    } else {
+      fx.add.points.visible = true;
+      fx.soft.points.visible = true;
+      fx.flashes.group.visible = true;
+    }
     ball.lid.rotation.x = lidAng;
     ball.btn.emissiveIntensity = btnGlow;
     ball.light.color.copy(style.glow).lerp(WHITE, 0.35).multiplyScalar(0.4 + 0.6 * lightOn);
@@ -276,7 +286,7 @@ export const CaptureBall: React.FC = () => {
     // Énfasis de cámara: un leve zoom durante el tiro y la tensión, y golpes cortos en impactos.
     S.fovKick = lerpExp(S.fovKick, 0, dt, 7);
     const cam = camera as THREE.PerspectiveCamera;
-    if (cam.isPerspectiveCamera) {
+    if (cam.isPerspectiveCamera && !quiet) {
       if (!S.fovTouched) S.baseFov = cam.fov;
       const off = S.fovOff + S.fovKick;
       if (Math.abs(off) > 0.01) {

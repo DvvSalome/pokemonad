@@ -12,6 +12,7 @@ import type { Posicion3DPlano } from '../engine/runtime/movimiento';
 import { standY, solidY } from './terrain';
 import { orbit, camCtl } from './cameraStore';
 import { inArena } from './battleStore';
+import { ACADEMY } from './academyStage';
 import { easeInOutCubic } from './intro/shots';
 
 /** Altura del punto de mira sobre el suelo del jugador: el pecho, no los pies. */
@@ -20,8 +21,8 @@ const LOOK_HEIGHT = 1.05;
 const FLOOR_MARGIN_POSE = 0.9;
 const FLOOR_MARGIN_AFTER = 0.6;
 /** Velocidades de suavizado: la mirada persigue un poco más rápido que la posición. */
-const POS_LERP = 7;
-const LOOK_LERP = 10;
+const POS_LERP = 10;
+const LOOK_LERP = 13;
 /** Duración del barrido de cámara al entrar al mundo desde la selección (lo usa también el rótulo de zona). */
 export const ENTRY_SECONDS = 3;
 
@@ -37,7 +38,8 @@ export const CameraRig: React.FC<{ targetRef: React.MutableRefObject<Posicion3DP
   const sweep = useRef<{ t: number; yaw: number; pitch: number; dist: number; look: THREE.Vector3 } | null>(null);
 
   useFrame((_, rawDelta) => {
-    if (inArena()) return;
+    // Con el combate (el original o el del Coliseo Monad) abierto, la cámara es la suya.
+    if (inArena() || ACADEMY.active) return;
     const delta = Math.min(rawDelta, 0.1);
     const t = targetRef.current;
     const groundY = standY(t.x, t.z);

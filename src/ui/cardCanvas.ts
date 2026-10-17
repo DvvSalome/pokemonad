@@ -293,7 +293,7 @@ export async function drawCard(c: CardData, { t = 0 }: { t?: number } = {}): Pro
   g.fillStyle = L ? pal.sub : '#2b4460'; g.font = "italic 600 16px 'Nunito', sans-serif";
   const l1 = tr('card.from', { type, zone }) + (c.trainer ? tr('card.caughtBy', { who: c.trainer }) : '');
   const l2 = c.token
-    ? `$${c.token.symbol} ${tr('card.onArc')} · mcap ${usd(c.token.marketCap)} · ${c.token.address.slice(0, 6)}…${c.token.address.slice(-4)}${c.fainted ? tr('card.fainted') : ''}`
+    ? `$${c.token.symbol} ${tr('card.onMonad')} · mcap ${usd(c.token.marketCap)} · ${c.token.address.slice(0, 6)}…${c.token.address.slice(-4)}${c.fainted ? tr('card.fainted') : ''}`
     : tr('card.base', { rate: sp.rate, tier: rar });
   g.fillText(fit(g, l1, CW - 180), 92, fyy + 30); g.fillText(fit(g, l2, CW - 180), 92, fyy + 54);
 

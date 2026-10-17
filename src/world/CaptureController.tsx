@@ -10,6 +10,7 @@ import {
   getNearbyId, getActiveId, getCaught, getPhase,
 } from './captureStore';
 import { isBattleActive } from './battleStore';
+import { getAcademy } from '../academy/academyStore';
 
 /** Radio, en metros, al que se puede iniciar un encuentro con un monstruo. */
 const REACH = 3.6;
@@ -42,6 +43,8 @@ export const CaptureController: React.FC<{ targetRef: React.MutableRefObject<Pos
         return;
       }
       if (e.code === 'KeyE') {
+        const academy = getAcademy();
+        if (academy.phase !== 'closed' || academy.nearTutor != null || academy.nearGuard) return;
         const near = getNearbyId();
         if (near) { e.preventDefault(); startEncounter(near); }
       }

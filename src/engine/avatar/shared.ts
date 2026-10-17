@@ -24,7 +24,7 @@ export interface Avatar3DConfig {
 
 export type AvatarAssetQuality = 'high' | 'medium' | 'low';
 
-export type AnimationState = 'idle' | 'walk' | 'run' | 'cheer' | 'dance' | 'wave' | 'jump' | 'victory';
+export type AnimationState = 'idle' | 'walk' | 'run' | 'cheer' | 'dance' | 'wave' | 'jump' | 'victory' | 'attack' | 'hurt' | 'death';
 
 export const DEFAULT_MODEL_URL = '/characters/generic-male.glb';
 
@@ -53,6 +53,16 @@ export const EMBEDDED_NAME_MAP: Record<string, AnimationState> = {
   wave: 'wave', waving: 'wave', 'wave gesture': 'wave',
   jump: 'jump', jumping: 'jump', 'happy jump': 'jump', 'happy jump f': 'jump',
   victory: 'victory', 'victory cheer': 'victory',
+  // Combate del Coliseo Monad. Los cuatro personajes jugables traen estos clips dentro del GLB, con el
+  // nombre de su familia (Punch/Weapon/Bite_Front, HitReact/HitRecieve, Death).
+  attack: 'attack', punch: 'attack', weapon: 'attack', headbutt: 'attack', bite_front: 'attack', 'sword': 'attack',
+  hitreact: 'hurt', hitrecieve: 'hurt', hit_react: 'hurt',
+  death: 'death',
+  // El dragón vuela: sus clips son Flying_Idle (ya es 'idle') y Fast_Flying, que es su forma de correr.
+  fast_flying: 'run',
+  // El esqueleto trae los nombres truncados por el exportador a 21 caracteres: "CharacterArmature|Dea",
+  // "|Pun", "|Swo". No contienen la palabra entera, así que van por nombre exacto.
+  'characterarmature|dea': 'death', 'characterarmature|pun': 'attack', 'characterarmature|swo': 'attack',
 };
 
 export const BONE_ALIASES: Record<string, string[]> = {

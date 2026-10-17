@@ -12,7 +12,7 @@ import { WIND } from './wind';
 // Por el camino sale polvo; por la hierba, polvo más tenue y briznas sueltas que saltan y caen.
 
 const POOL = 72;
-const RUN_SPEED = 5.4;
+const RUN_SPEED = 11;
 const WALK_SPEED = 1.2;
 
 const vert = /* glsl */ `

@@ -20,10 +20,14 @@ import { CaptureBall } from './world/CaptureBall';
 import { CaptureController } from './world/CaptureController';
 import { Fountains } from './world/Fountain';
 import { Park } from './world/Park';
+import { Landmarks } from './world/Landmarks';
+import { Shore } from './world/Shore';
+import { AcademyArena } from './world/AcademyArena';
 import { Sky } from './world/Sky';
 import { BattleArena } from './world/BattleArena';
 import { Colosseum } from './world/Colosseum';
 import { inArena } from './world/battleStore';
+import { ACADEMY } from './world/academyStage';
 import { ARENA } from './world/terrain';
 import { TitleCamera, PEDESTAL, type TitleMode } from './world/TitleCamera';
 import { Pedestal } from './world/Pedestal';
@@ -33,6 +37,7 @@ import { MobileJoystick, type JoystickInput } from './engine/scene/MobileJoystic
 import type { Posicion3DPlano } from './engine/runtime/movimiento';
 import type { RosterEntry } from './engine/avatar/characterRoster';
 import { isMobileDevice } from '../lib/mobileDetect';
+import { orbit } from './world/cameraStore';
 import * as wild from './world/wildStore';
 import * as buffs from './world/buffs';
 import * as capture from './world/captureStore';
@@ -41,13 +46,21 @@ import * as battle from './world/battleStore';
 // El jugador arranca donde estaba de pie en el pedestal de la pantalla de selección.
 const START: Posicion3DPlano = { x: PEDESTAL.x, z: PEDESTAL.z };
 // Color de arranque, antes de que DayNightCycle escriba el primero de verdad (ver world/lighting.ts).
-const SKY_START = new THREE.Color(0xc3e7ff);
+const SKY_START = new THREE.Color(0xa9e6d8);
 
 export type SceneMode = TitleMode | 'play';
 
-interface SceneProps { mode: SceneMode; characterConfig?: RosterEntry | null }
+interface SceneProps {
+  mode: SceneMode;
+  characterConfig?: RosterEntry | null;
+  /**
+   * Modo exploración: el mundo entero y el jugador, sin captura ni combate. Es el modo del recorrido
+   * libre por la región — se entra directo y lo único que se hace es caminar y encontrar los coliseos.
+   */
+  explore?: boolean;
+}
 
-export const Scene: React.FC<SceneProps> = ({ mode, characterConfig }) => {
+export const Scene: React.FC<SceneProps> = ({ mode, characterConfig, explore = false }) => {
   const playing = mode === 'play';
   const posRef = useRef<Posicion3DPlano>({ ...START });
   const joystickRef = useRef<JoystickInput>({ dx: 0, dz: 0, magnitude: 0, isRunning: false, active: false });
@@ -56,7 +69,7 @@ export const Scene: React.FC<SceneProps> = ({ mode, characterConfig }) => {
   // Lo que siguen la sombra y el clima: el jugador, salvo en combate, que es el estadio (puede estar a
   // más de los ±60 m que cubre la cámara de sombras del sitio del encuentro).
   const focusRef = useMemo(() => ({
-    get current(): Posicion3DPlano { return inArena() ? ARENA : posRef.current; },
+    get current(): Posicion3DPlano { return inArena() ? ARENA : ACADEMY.active ? ACADEMY.center : posRef.current; },
     set current(v: Posicion3DPlano) { posRef.current = v; },
   }), []);
 
@@ -88,7 +101,9 @@ export const Scene: React.FC<SceneProps> = ({ mode, characterConfig }) => {
           scene.fog = new THREE.Fog(SKY_START.getHex(), 110, 340);
           gl.setClearColor(SKY_START);
           // Solo en desarrollo: la escena de R3F vive en otro reconciliador y no se alcanza desde el DOM.
-          if (import.meta.env.DEV) (window as unknown as { __pg: unknown }).__pg = { scene, camera, gl, advance, wild, buffs, capture, battle };
+          // En desarrollo, un asa para inspeccionar y recorrer el mundo desde la consola: además de la
+          // escena, la cámara orbital (para encuadrar un sitio) y el teletransporte (para ir a verlo).
+          if (import.meta.env.DEV) (window as unknown as { __pg: unknown }).__pg = { scene, camera, gl, advance, wild, buffs, capture, battle, orbit, warpTo: wild.warpTo };
         }}
       >
         <Sky />
@@ -110,14 +125,19 @@ export const Scene: React.FC<SceneProps> = ({ mode, characterConfig }) => {
         <Water />
         <Fountains />
         <Park />
+        <Landmarks />
+        <Shore />
+        <AcademyArena />
         <Colosseum />
         {playing ? (
           <>
-            <BattleArena />
-            <CaptureBall />
+            {!explore && <BattleArena />}
+            <CaptureBall quiet={explore} />
             <CaptureController targetRef={posRef} />
             <Player start={START} posRef={posRef} joystickRef={joystickRef} characterConfig={characterConfig ?? undefined} />
-            <CameraRig targetRef={posRef} ease />
+            {/* El barrido de entrada (`ease`) arranca desde la pose de la pantalla de selección; en el
+                modo exploración no hay tal pantalla, así que la cámara se coloca ya detrás del jugador. */}
+            <CameraRig targetRef={posRef} ease={!explore} />
             <CameraInput />
           </>
         ) : (

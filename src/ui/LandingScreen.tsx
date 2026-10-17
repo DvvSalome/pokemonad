@@ -90,7 +90,7 @@ export const LandingScreen: React.FC<Props> = ({ onPlay }) => {
           <LogoLine cls="l1" text="POKE" at={0} />
           <LogoLine cls="l2" text="SCOUT" at={4} />
         </h1>
-        <div className="pg-logo-ribbon">ARC EDITION</div>
+        <div className="pg-logo-ribbon">MONAD EDITION</div>
         <p className="pg-title-tag">{t('title.tag')}</p>
 
         <button className="pg-play" onClick={onPlay}>

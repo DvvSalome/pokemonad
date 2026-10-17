@@ -1,54 +1,39 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Scene } from './Scene';
-import { startArcSync, stopArcSync } from './world/arcSync';
-import { LandingScreen } from './ui/LandingScreen';
-import { CharacterSelectScreen } from './ui/CharacterSelectScreen';
-import { HUD } from './ui/HUD';
-import { CaptureOverlay } from './ui/CaptureOverlay';
-import { CardReveal } from './ui/CardReveal';
-import { BattleScreen } from './ui/BattleScreen';
-import { RateLimitNotice } from './ui/RateLimitNotice';
-import { EntryCinematic } from './ui/intro/EntryCinematic';
-import { CHARACTER_ROSTER, type RosterEntry } from './engine/avatar/characterRoster';
+import { ExploreHUD } from './ui/ExploreHUD';
+import { AcademyUI } from './academy/AcademyUI';
+import { LectureCapture } from './ui/LectureCapture';
+import { CHARACTER_ROSTER, characterById, type RosterEntry } from './engine/avatar/characterRoster';
 
-type Screen = 'landing' | 'select' | 'playing';
+/**
+ * Modo exploración: se entra directo al mundo.
+ *
+ * No hay portada ni cortinilla de entrada: al cargar ya estás de pie en la pradera. El personaje se
+ * cambia en caliente desde el HUD (los cuatro del Animated Monster Pack) y la elección se recuerda,
+ * así que tampoco hace falta una pantalla de selección para eso.
+ */
+const SAVED = 'pg-character';
 
-// Un solo mundo 3D para las tres pantallas: la portada lo sobrevuela, la selección baja al pedestal del
-// spawn y al jugar la cámara del juego toma el relevo desde ahí, sin recargar la región.
+function firstCharacter(): RosterEntry {
+  try {
+    const id = localStorage.getItem(SAVED);
+    if (id) return characterById(id);
+  } catch { /* sin storage: el primero del elenco */ }
+  return CHARACTER_ROSTER[0];
+}
+
 export const App: React.FC = () => {
-  const [screen, setScreen] = useState<Screen>('landing');
-  const [character, setCharacter] = useState<RosterEntry>(CHARACTER_ROSTER[0]);
-  // El HUD entra al terminar el barrido de cámara de la entrada (EntryCinematic), no encima del plano.
-  const [hud, setHud] = useState(false);
-
-  useEffect(() => {
-    startArcSync();
-    return stopArcSync;
-  }, []);
-
-  const mode = screen === 'landing' ? 'title' : screen === 'select' ? 'select' : 'play';
+  const [character, setCharacter] = useState<RosterEntry>(firstCharacter);
+  const choose = (next: RosterEntry) => {
+    setCharacter(next);
+    try { localStorage.setItem(SAVED, next.id); } catch { /* sin storage: solo esta partida */ }
+  };
   return (
     <>
-      <Scene mode={mode} characterConfig={character} />
-      {screen === 'landing' && <LandingScreen onPlay={() => setScreen('select')} />}
-      {screen === 'select' && (
-        <CharacterSelectScreen
-          selected={character}
-          onChange={setCharacter}
-          onBack={() => setScreen('landing')}
-          onConfirm={() => { setHud(false); setScreen('playing'); }}
-        />
-      )}
-      {screen === 'playing' && (
-        <>
-          <EntryCinematic onHud={() => setHud(true)} />
-          {hud && <HUD character={character} />}
-          <CaptureOverlay />
-          <BattleScreen />
-          <CardReveal />
-          <RateLimitNotice />
-        </>
-      )}
+      <Scene mode="play" characterConfig={character} explore />
+      <ExploreHUD character={character} onCharacter={choose} />
+      <LectureCapture />
+      <AcademyUI />
     </>
   );
 };

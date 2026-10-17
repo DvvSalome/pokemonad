@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseConfigured } from '@/lib/supabase';
 import type { Avatar3DConfig } from './shared';
 import { DEFAULT_MODEL_URL } from './shared';
 
@@ -27,6 +27,13 @@ export const useAvatar3D = (avatarId?: string) => {
       try {
         setLoading(true);
         setError(null);
+
+        // Sin proyecto configurado no hay catálogo que consultar: el avatar por defecto, y ni una
+        // petición a la red (antes se reintentaba contra un host inexistente y llenaba la consola).
+        if (!supabaseConfigured) {
+          if (!cancelled && requestId === loadSeqRef.current) { setAvatarConfig(fallback); setLoading(false); }
+          return;
+        }
 
         let avatar: any = null;
 

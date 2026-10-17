@@ -4,19 +4,20 @@
 // falla o viene vacío se quedan los monstruos de demo de species.ts, para que el mundo nunca esté vacío.
 import { useSyncExternalStore } from 'react';
 import { SPAWNS as DEMO_SPAWNS, SPECIES_CATALOG, type Spawn, type Species } from './species';
-import { PLACES, PLACE_KEYS, walkable, onPier, pathDist, dist, POND, ARENA, COLISEUM } from './terrain';
+import { PLACES, PLACE_KEYS, walkable, onPier, pathDist, dist, POND, coliseumDist, COLISEUM } from './terrain';
 import { fetchDexArcTokens, type ArcToken } from '../../lib/arc/tokens';
 import {
   lineOf, stageOf, modelOf, rarityOf, catchRate, cleanText, hash32,
 } from './tokenSpecies';
 import { call, isOnline, type RouteResult, type ServerEvent, type ServerExtra } from '../../lib/api';
 import { setServerShiny } from './buffs';
+import { PROFESSORS } from './professors';
 
 export type WildSource = 'demo' | 'loading' | 'arc' | 'error';
 
 interface WildState { spawns: Spawn[]; source: WildSource; updatedAt: number }
 
-let s: WildState = { spawns: DEMO_SPAWNS, source: 'demo', updatedAt: 0 };
+let s: WildState = { spawns: [...DEMO_SPAWNS, ...PROFESSORS], source: 'demo', updatedAt: 0 };
 const listeners = new Set<() => void>();
 function set(next: Partial<WildState>) { s = { ...s, ...next }; listeners.forEach((l) => l()); }
 function subscribe(l: () => void) { listeners.add(l); return () => { listeners.delete(l); }; }
@@ -37,7 +38,7 @@ function spawnFits(x: number, z: number): boolean {
   if (!walkable(x, z) || onPier(x, z)) return false;
   if (pathDist(x, z) < 1.8) return false;
   if (dist(x, z, POND) < POND.r + 1.5) return false;
-  if (dist(x, z, ARENA) < COLISEUM.wall + COLISEUM.wallT + 3) return false;
+  if (coliseumDist(x, z) < COLISEUM.wall + COLISEUM.wallT + 3) return false;
   return true;
 }
 const STAGE_SIZE = [2.2, 2.7, 3.2];
@@ -90,11 +91,15 @@ export const playerPos = { x: 0, z: 0 };
 
 /** Teletransporte pendiente (Dex "Find it"): Player lo consume al inicio del frame. */
 let pendingWarp: { x: number; z: number } | null = null;
+/** Encola un warp a un punto cualquiera del mapa. */
+export function warpTo(x: number, z: number) {
+  pendingWarp = { x, z };
+}
 /** Encola un warp a la entrada de una zona (meadow, lake, …). */
 export function warpToZone(zone: string) {
   const p = PLACES[zone];
   if (!p) return;
-  pendingWarp = { x: p.entry[0], z: p.entry[1] };
+  warpTo(p.entry[0], p.entry[1]);
 }
 /** Devuelve y limpia el warp pendiente, o null. */
 export function takeWarp(): { x: number; z: number } | null {
@@ -107,7 +112,11 @@ export function takeWarp(): { x: number; z: number } | null {
 let extra: Spawn[] = [];
 /** Monstruos de evento (Dorado): uno para todos, en un lugar fijo del mapa. */
 let golden: Spawn[] = [];
-const mergeSpawns = (feed: Spawn[]) => [...feed.filter((sp) => !sp.kind || sp.kind === 'wild'), ...extra, ...golden];
+const mergeSpawns = (feed: Spawn[]) => {
+  const ids = new Set(feed.map((sp) => sp.id));
+  const profs = PROFESSORS.filter((sp) => !ids.has(sp.id));
+  return [...feed.filter((sp) => !sp.kind || sp.kind === 'wild'), ...profs, ...extra, ...golden];
+};
 
 /**
  * Trae `count` monstruos de las rarezas pedidas junto al jugador durante `minutes` minutos. Como el Lure

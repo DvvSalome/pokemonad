@@ -16,10 +16,17 @@ import { inArena } from './battleStore';
 import { SPOT, facing } from './arenaLayout';
 import { orbit, forwardFromYaw, rightFromYaw } from './cameraStore';
 import { takeWarp } from './wildStore';
+import { ACADEMY, INTRO, fx, type Pose } from './academyStage';
+import type { AnimationState } from '../engine/avatar/shared';
 
-// Algo más rápidas que el original (js/player.js: WALK 3.6, RUN 6.8): la región es grande para ir a pie.
-const MOVE_SPEED = 4;
-const RUN_SPEED = 8.2;
+// La región mide cientos de metros. Caminar a 7.6 ya cruza un bioma sin ser un viaje; Shift (o el
+// botón Correr) casi lo duplica, y la diferencia tiene que notarse al soltar la tecla.
+const MOVE_SPEED = 7.6;
+const RUN_SPEED = 15;
+
+/** Pose del duelo del Coliseo Monad → clip del avatar (los estados nuevos están en shared.ts). */
+const POSE_ANIM: Record<Pose, AnimationState> = { idle: 'idle', attack: 'attack', hurt: 'hurt', win: 'victory', lose: 'death' };
+const COMBAT_STATES: AnimationState[] = ['attack', 'hurt', 'death', 'victory'];
 
 export interface PlayerProps {
   start?: Posicion3DPlano;
@@ -37,6 +44,7 @@ export const Player: React.FC<PlayerProps> = ({ start = { x: 0, z: 9 }, posRef, 
   // atan2(dx, dz) matches GLTFAvatar's rotation convention directly — see the comment on
   // facingAngleRef there for why this replaced the old 8-direction lookup table.
   const facingAngleRef = useRef(Math.PI);
+  const wasInDuel = useRef(false);
 
   useFrame((_, delta) => {
     // Teletransporte desde el Dex ("Find it in…"): aplica antes de mover/congelar.
@@ -46,6 +54,36 @@ export const Player: React.FC<PlayerProps> = ({ start = { x: 0, z: 9 }, posRef, 
       if (groupRef.current) {
         groupRef.current.position.set(warp.x, standY(warp.x, warp.z), warp.z);
       }
+    }
+    // Duelo del Coliseo Monad: el avatar se dibuja en su marca de la arena, mirando al jefe, y hace lo que
+    // diga fx.pose (ataca al acertar, se encoge al fallar, celebra o cae al terminar). posRef NO se toca:
+    // al salir el jugador reaparece justo donde estaba, fuera del portón.
+    if (ACADEMY.active) {
+      wasInDuel.current = true;
+      controls.updateMovement(0, 0);
+      facingAngleRef.current = ACADEMY.facing;
+      const want = POSE_ANIM[fx.pose];
+      if (controls.animationStateRef.current !== want) { controls.animationStateRef.current = want; controls.setAnimationState(want); }
+      // El avance y el retroceso van sobre el eje que une las dos marcas.
+      const off = fx.player.lunge - fx.player.knock;
+      const g = groupRef.current;
+      if (g) {
+        // En la presentación no está en la pista hasta su plano: aparece de golpe, como el monstruo sale de la bola.
+        const shown = fx.t >= INTRO.playerAt;
+        g.visible = shown;
+        const pop = shown ? Math.min(1, (fx.t - INTRO.playerAt) * 3.2) : 0;
+        g.scale.setScalar(pop < 1 ? 0.15 + pop * 0.85 : 1);
+        g.position.set(
+          ACADEMY.player.x + Math.sin(ACADEMY.facing) * off, ACADEMY.player.y, ACADEMY.player.z + Math.cos(ACADEMY.facing) * off,
+        );
+      }
+      return;
+    }
+    if (wasInDuel.current) {
+      // Al volver al mundo se suelta el clip de combate (una muerte clavada en el suelo sería un bug visible).
+      wasInDuel.current = false;
+      if (groupRef.current) { groupRef.current.visible = true; groupRef.current.scale.setScalar(1); }
+      if (COMBAT_STATES.includes(controls.animationStateRef.current)) { controls.animationStateRef.current = 'idle'; controls.setAnimationState('idle'); }
     }
     // En el estadio el entrenador se planta detrás de su monstruo, mirando al rival. posRef no se toca:
     // al volver, sigue donde empezó el encuentro.

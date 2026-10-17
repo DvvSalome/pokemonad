@@ -189,10 +189,10 @@ export const HUD: React.FC<Props> = ({ character }) => {
             </span>
             {wallet.address ? (
               <button className="pg-wchip on" onClick={disconnect} title={t('hud.walletDisconnect', { addr: wallet.address })}>
-                <IconWallet size={16} /> {shortAddr(wallet.address)}{wallet.usdc !== null && <b>{wallet.usdc} USDC</b>}
+                <IconWallet size={16} /> {shortAddr(wallet.address)}{wallet.usdc !== null && <b>{wallet.usdc} MON</b>}
               </button>
             ) : (
-              <button className="pg-wchip" onClick={() => void connect()} disabled={wallet.status === 'connecting'} title={wallet.error ?? t('hud.connectArc')}>
+              <button className="pg-wchip" onClick={() => void connect()} disabled={wallet.status === 'connecting'} title={wallet.error ?? t('hud.connectMonad')}>
                 <IconWallet size={16} /> {t(wallet.status === 'connecting' ? 'common.connecting' : 'common.connectWallet')}
               </button>
             )}

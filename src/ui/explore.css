@@ -1,0 +1,298 @@
+/* Interfaz del modo exploración.
+ *
+ * Cuaderno de expedición: obsidiana, filete ámbar, Cinzel en los títulos y Barlow Condensed en los datos.
+ * La brújula de la región va arriba a la derecha y el elenco, con el botón de correr, abajo.
+ */
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Barlow+Condensed:wght@400;500;600;700&display=swap');
+
+:root {
+  --ex-ink: #0b0e12;
+  --ex-panel: rgba(11, 14, 18, 0.88);
+  --ex-line: rgba(232, 163, 61, 0.55);
+  --ex-amber: #e8a33d;
+  --ex-teal: #46c8b0;
+  --ex-cream: #f2e8d8;
+  --ex-dim: #9aa0a6;
+  --ex-title: 'Cinzel', Georgia, serif;
+  --ex-body: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+  /* Bisel de 10 px en dos esquinas opuestas: la firma de forma de todo el HUD. */
+  --ex-cut: polygon(0 10px, 10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
+}
+
+/* ---------------------------------------------------------------- idioma, esquina superior izquierda */
+.ex-lang { position: fixed; left: 16px; top: 16px; z-index: 60; }
+.ex-lang .pg-lang { margin-left: 0; }
+.ex-lang .pg-lang-opts button { padding: 3px 8px; min-width: 32px; font-size: 11px; }
+
+/* ---------------------------------------------------------------- brújula: círculo arriba a la derecha
+ * Las clases van duplicadas (.pg-minimap2.pg-minimap2) a propósito: index.tsx importa game.css, y con
+ * especificidad igual ganaría el círculo del HUD anterior. */
+.pg-minimap2.pg-minimap2 {
+  position: fixed; top: 16px; right: 16px; left: auto; bottom: auto; z-index: 60;
+  width: 196px; height: auto; padding: 10px 10px 8px; cursor: pointer; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 0;
+  color: var(--ex-cream); font-family: var(--ex-body);
+  background: rgba(10, 8, 16, 0.78); border: 1px solid rgba(131, 110, 249, 0.55);
+  border-radius: 22px; clip-path: none;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transform: none;
+}
+.pg-minimap2.pg-minimap2:hover { transform: none; border-color: var(--ex-amber); }
+.pg-minimap2.pg-minimap2 .hd {
+  display: flex; align-items: center; gap: 8px; width: 100%; padding: 0 4px 8px;
+  border: 0; background: none;
+}
+.pg-minimap2.pg-minimap2 .hd b {
+  font: 700 11px/1 var(--ex-title); letter-spacing: 2px; text-transform: uppercase; color: #c4b6ff;
+  white-space: nowrap;
+}
+.pg-minimap2.pg-minimap2 .hd kbd {
+  margin-left: auto; padding: 1px 6px; font: 600 11px var(--ex-body); letter-spacing: 1px; color: var(--ex-cream);
+  background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.16); border-radius: 4px;
+}
+.pg-minimap2.pg-minimap2 .frame {
+  position: relative; width: 176px; height: 176px; margin: 0; overflow: hidden; border: 0; border-radius: 50%;
+  box-shadow: 0 0 0 3px #161222, 0 0 0 5px #e8a33d, 0 8px 18px rgba(0, 0, 0, 0.35);
+}
+.pg-minimap2.pg-minimap2 canvas {
+  position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 50%; clip-path: none;
+}
+.pg-minimap2.pg-minimap2 .n { display: none; }
+.pg-minimap2.pg-minimap2 .zone {
+  position: static; left: auto; right: auto; bottom: auto; transform: none; z-index: 1;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  margin: 8px 0 0; padding: 0; width: 100%; max-width: none;
+  font: 600 12px/1.2 var(--ex-body); letter-spacing: 1.6px; text-transform: uppercase; text-align: center;
+  color: var(--ex-cream); background: none; border: 0; border-radius: 0; box-shadow: none;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pg-minimap2.pg-minimap2 .zone::before {
+  content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--zc, #7fd35b); box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.35);
+}
+.pg-minimap2.pg-minimap2 .near {
+  display: block; width: 100%; padding: 2px 4px 2px;
+  font: 500 13px/1.2 var(--ex-body); letter-spacing: 0.3px; color: #b7fff2; text-align: center;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ---------------------------------------------------------------- elenco: tira inferior centrada */
+.ex-cast {
+  position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 60;
+  display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+  background: var(--ex-panel); border: 1px solid var(--ex-line); clip-path: var(--ex-cut);
+}
+.ex-run {
+  display: grid; justify-items: center; gap: 1px; margin-left: 6px; min-width: 88px; padding: 8px 12px; cursor: pointer;
+  color: var(--ex-cream); font-family: var(--ex-body); white-space: nowrap;
+  background: none; border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.ex-run b { font: 700 13px var(--ex-body); letter-spacing: 1.4px; text-transform: uppercase; }
+.ex-run small { font: 600 10px var(--ex-body); letter-spacing: 1px; text-transform: uppercase; color: var(--ex-dim); }
+.ex-run.on { border-color: var(--ex-teal); color: var(--ex-teal); background: rgba(70, 200, 176, 0.12); }
+.ex-run.on small { color: var(--ex-teal); }
+.ex-char {
+  position: relative; display: grid; justify-items: center; gap: 3px; width: 56px; padding: 6px 4px 5px; cursor: pointer;
+  background: none; border: 1px solid transparent; color: var(--ex-dim); font-family: var(--ex-body);
+}
+.ex-char:hover { border-color: rgba(232, 163, 61, 0.35); color: var(--ex-cream); }
+.ex-char.on { border-color: var(--ex-amber); color: var(--ex-cream); background: rgba(232, 163, 61, 0.12); }
+.ex-char i { font-style: normal; font-size: 20px; line-height: 1; filter: grayscale(0.4); }
+.ex-char.on i { filter: none; }
+.ex-char b { font: 600 11px var(--ex-body); letter-spacing: 1.4px; text-transform: uppercase; }
+
+/* ---------------------------------------------------------------- rótulo de zona: línea abajo a la izquierda */
+.ex-zone {
+  position: fixed; left: 18px; bottom: 26px; z-index: 55; pointer-events: none;
+  padding-left: 12px; border-left: 2px solid var(--ex-amber);
+  animation: exZone 3.6s both;
+}
+.ex-zone small { display: block; font: 500 11px var(--ex-body); letter-spacing: 3px; text-transform: uppercase; color: var(--ex-dim); }
+.ex-zone b { display: block; font: 700 26px/1.1 var(--ex-title); letter-spacing: 1px; color: var(--ex-cream); text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6); }
+@keyframes exZone {
+  0% { opacity: 0; transform: translateX(-14px); }
+  8%, 82% { opacity: 1; transform: none; }
+  100% { opacity: 0; }
+}
+
+/* ---------------------------------------------------------------- tienda y clase del profesor */
+.ex-shop-btn {
+  position: fixed; left: 16px; top: 58px; z-index: 60; padding: 8px 14px; cursor: pointer;
+  color: var(--ex-cream); font: 700 13px var(--ex-body); letter-spacing: 1.4px; text-transform: uppercase;
+  background: var(--ex-panel); border: 1px solid var(--ex-line); border-radius: 12px;
+}
+.ex-shop-back { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; background: rgba(6, 8, 11, 0.55); }
+.ex-shop {
+  width: min(380px, calc(100vw - 32px)); padding: 14px 16px 12px; color: var(--ex-cream); font-family: var(--ex-body);
+  background: rgba(10, 8, 16, 0.94); border: 1px solid rgba(131, 110, 249, 0.5); border-radius: 18px;
+}
+.ex-shop header { display: flex; align-items: center; gap: 10px; }
+.ex-shop header b { font: 700 16px var(--ex-title); letter-spacing: 1.6px; text-transform: uppercase; color: var(--ex-amber); }
+.ex-shop header span { margin-left: auto; font: 600 14px var(--ex-body); color: #ffe7a3; }
+.ex-shop header button {
+  width: 28px; height: 28px; cursor: pointer; color: var(--ex-cream);
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.2); border-radius: 50%;
+}
+.ex-shop p { margin: 8px 0 10px; font: 500 15px/1.35 var(--ex-body); color: #d9d0c2; }
+.ex-shop ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.ex-shop li { display: flex; align-items: center; gap: 10px; }
+.ex-shop li span { flex: 1; font: 600 15px var(--ex-body); }
+.ex-shop li button {
+  min-width: 64px; padding: 6px 10px; cursor: pointer; color: #1a1408;
+  font: 700 14px var(--ex-body); background: var(--ex-amber); border: 0; border-radius: 8px;
+}
+.ex-shop li button:disabled { opacity: 0.4; cursor: default; }
+.ex-shop small { display: block; margin-top: 8px; color: #b7fff2; font: 600 14px var(--ex-body); }
+.ex-invite {
+  position: fixed; left: 50%; bottom: 108px; transform: translateX(-50%); z-index: 62;
+  display: flex; align-items: center; gap: 10px; padding: 10px 16px; cursor: pointer;
+  color: #1a1408; font: 700 16px var(--ex-body); letter-spacing: 0.4px;
+  background: #f3e2b0; border: 0; border-radius: 999px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+}
+.ex-invite kbd {
+  padding: 2px 8px; color: #f3e2b0; font: 700 13px var(--ex-body);
+  background: #1a1408; border-radius: 8px;
+}
+.ex-invite b { font: 700 16px var(--ex-title); }
+
+/* Aula: el profesor en el atril, no el aro de PokeScout. */
+.lx {
+  position: fixed; inset: 0; z-index: 75; display: grid; grid-template-columns: 1.1fr 0.9fr;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(255, 214, 140, 0.18), transparent 42%),
+    linear-gradient(160deg, #1b2430 0%, #10160f 55%, #0c1218 100%);
+  color: #f4efe4; font-family: var(--ex-body);
+}
+.lx-stage { position: relative; display: grid; place-items: end center; min-height: 0; }
+.lx-lamp {
+  position: absolute; left: 50%; top: 8%; width: 280px; height: 280px; transform: translateX(-50%);
+  background: radial-gradient(circle, rgba(255, 214, 140, 0.45), transparent 68%);
+  animation: lxLamp 2.8s ease-in-out infinite;
+}
+.lx.teaching .lx-lamp { animation-duration: 1.4s; }
+@keyframes lxLamp { 50% { opacity: 0.55; transform: translateX(-50%) scale(1.08); } }
+.lx-view { position: absolute !important; inset: 0 0 18px 0; width: 100% !important; height: auto !important; }
+.lx-podium {
+  position: relative; z-index: 2; width: min(340px, 70%); height: 28px; margin-bottom: 8vh;
+  background: linear-gradient(#6b4a2a, #3d2916); border-radius: 8px 8px 4px 4px;
+  box-shadow: 0 14px 0 #24180e;
+}
+.lx-wax {
+  position: absolute; left: 50%; top: 38%; z-index: 3; width: 84px; height: 84px; margin-left: -42px;
+  border-radius: 50%; background: radial-gradient(circle at 35% 35%, #ffd27a, #c4532a 62%, #6a2412);
+  box-shadow: 0 10px 0 rgba(0, 0, 0, 0.35);
+  animation: lxStamp 0.7s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+@keyframes lxStamp { from { transform: translateY(-180px) scale(1.4); opacity: 0; } to { transform: none; opacity: 1; } }
+.lx-bubble {
+  position: absolute; left: 54%; top: 22%; z-index: 4; max-width: 260px; padding: 12px 14px;
+  background: #f7f1e4; color: #1c140c; border-radius: 16px 16px 16px 4px;
+  font: 600 16px/1.35 var(--ex-body); box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+}
+.lx-bubble i {
+  display: inline-block; width: 8px; height: 1em; margin-left: 2px; vertical-align: text-bottom;
+  background: #1c140c; animation: lxCaret 0.7s steps(1) infinite;
+}
+@keyframes lxCaret { 50% { opacity: 0; } }
+.lx-side { padding: 8vh 40px 40px 12px; display: flex; flex-direction: column; justify-content: center; }
+.lx-side > small { font: 700 12px var(--ex-body); letter-spacing: 3px; text-transform: uppercase; color: #e8c56b; }
+.lx-side h2 { margin: 4px 0 10px; font: 700 36px/1.05 var(--ex-title); color: #f7f1e4; }
+.lx-side p { margin: 0 0 14px; font: 500 18px/1.35 var(--ex-body); color: #e7dcc8; }
+.lx-meter {
+  position: relative; height: 18px; margin: 8px 0 16px; border-radius: 999px;
+  background: repeating-linear-gradient(90deg, #243028 0 8px, #1a241e 8px 16px);
+  overflow: hidden; box-shadow: inset 0 0 0 2px #0c100e;
+}
+.lx-meter b {
+  position: absolute; left: 18%; width: 22%; top: 0; bottom: 0; background: rgba(232, 197, 107, 0.85);
+}
+.lx-meter i {
+  position: absolute; top: -3px; bottom: -3px; width: 8px; border-radius: 4px; background: #f7f1e4;
+  left: calc((1 - var(--k, 1)) * 88%);
+  transition: left 0.05s linear;
+}
+.lx-seals { display: flex; gap: 8px; margin-bottom: 16px; }
+.lx-seals button {
+  flex: 1; display: grid; justify-items: center; gap: 3px; padding: 8px 4px; cursor: pointer;
+  color: #f7f1e4; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 14px;
+}
+.lx-seals button.on { border-color: var(--seal); background: color-mix(in srgb, var(--seal) 28%, transparent); }
+.lx-seals button:disabled { opacity: 0.35; cursor: default; }
+.lx-seals em { width: 22px; height: 22px; border-radius: 50%; background: var(--seal); box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.25); }
+.lx-seals span { font: 700 12px var(--ex-body); letter-spacing: 1px; text-transform: uppercase; }
+.lx-seals strong { font: 700 14px var(--ex-body); }
+.lx-acts { display: flex; gap: 8px; }
+.lx-acts button, .lx-board button {
+  padding: 10px 16px; cursor: pointer; border: 0; border-radius: 12px;
+  font: 700 15px var(--ex-body); letter-spacing: 1px; text-transform: uppercase;
+}
+.lx-acts .go, .lx-board button { color: #1a1408; background: #e8c56b; }
+.lx-acts .ghost { color: #f7f1e4; background: transparent; border: 1px solid rgba(255,255,255,0.3); }
+.lx-acts button:disabled { opacity: 0.4; cursor: default; }
+.lx-wait { font-size: 22px; color: #e8c56b; animation: lxLamp 1s ease-in-out infinite; }
+.lx-board {
+  margin-top: 8px; padding: 16px; background: #14301c; border-radius: 16px;
+  box-shadow: inset 0 0 0 6px #3d2a18, inset 0 0 0 8px #c9a36a;
+}
+.lx-board small { color: #d7e7c8; letter-spacing: 2px; text-transform: uppercase; font: 700 12px var(--ex-body); }
+.lx-board p { min-height: 3.2em; color: #f3ffe8; font: 600 20px/1.4 var(--ex-body); }
+@media (max-width: 800px) {
+  .lx { grid-template-columns: 1fr; }
+  .lx-side { padding: 12px 16px 24px; }
+  .lx-side h2 { font-size: 26px; }
+}
+
+/* ---------------------------------------------------------------- teclas: esquina inferior derecha */
+.ex-keys {
+  position: fixed; right: 18px; bottom: 18px; z-index: 55; pointer-events: none; text-align: right;
+  display: grid; gap: 2px; font: 500 12px var(--ex-body); letter-spacing: 1.6px; text-transform: uppercase;
+  color: var(--ex-dim); animation: exKeys 12s both;
+}
+.ex-keys span { display: block; }
+.ex-keys kbd {
+  display: inline-block; min-width: 18px; margin-right: 2px; padding: 0 4px;
+  font: 600 11px var(--ex-body); color: var(--ex-cream);
+  background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.18);
+}
+@keyframes exKeys { 0% { opacity: 0; } 4%, 88% { opacity: 1; } 100% { opacity: 0; } }
+
+/* ---------------------------------------------------------------- mapa grande */
+.pg-overlay.pg-overlay { background: rgba(6, 8, 11, 0.82); }
+.pg-regionmap.pg-regionmap {
+  background: rgba(10, 8, 16, 0.94); border: 1px solid rgba(131, 110, 249, 0.5);
+  border-radius: 24px; clip-path: none; padding: 14px 16px 12px;
+  color: var(--ex-cream); font-family: var(--ex-body);
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.55);
+}
+.pg-regionmap.pg-regionmap header {
+  display: flex; align-items: center; gap: 12px; margin: 0 0 12px; padding: 0 2px 10px;
+  border-bottom: 1px solid rgba(232, 163, 61, 0.22);
+}
+.pg-regionmap.pg-regionmap h2 { margin: 0; font: 700 16px var(--ex-title); letter-spacing: 2.4px; text-transform: uppercase; color: var(--ex-amber); }
+.pg-regionmap.pg-regionmap .here { font: 600 13px var(--ex-body); letter-spacing: 1.4px; text-transform: uppercase; color: var(--ex-cream); background: none; border: 0; }
+.pg-regionmap .here b { color: #ffe7a3; padding: 2px 8px; border-radius: 999px; background: rgba(232, 163, 61, 0.16); }
+.pg-regionmap.pg-regionmap canvas {
+  border: 0; border-radius: 50%;
+  box-shadow: 0 0 0 3px #161222, 0 0 0 5px #e8a33d, 0 14px 28px rgba(0, 0, 0, 0.4);
+}
+.pg-regionmap.pg-regionmap footer {
+  font: 500 12px var(--ex-body); letter-spacing: 1.2px; text-transform: uppercase; color: #c8c2b6;
+}
+.pg-regionmap.pg-regionmap .x {
+  margin-left: auto; width: 32px; height: 32px; cursor: pointer;
+  color: var(--ex-cream); background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.22); border-radius: 50%; box-shadow: none;
+}
+
+@media (max-width: 760px) {
+  .ex-lang { left: 10px; top: 10px; }
+  .pg-minimap2.pg-minimap2 { width: 148px; right: 10px; top: 10px; padding: 8px 8px 6px; }
+  .pg-minimap2.pg-minimap2 .frame { width: 124px; height: 124px; }
+  .pg-minimap2.pg-minimap2 .near { display: none; }
+  .ex-cast { gap: 6px; padding: 6px 8px; bottom: 10px; }
+  .ex-char { width: 46px; }
+  .ex-char i { font-size: 17px; }
+  .ex-char b { font-size: 9.5px; }
+  .ex-zone b { font-size: 20px; }
+  .ex-keys { display: none; }
+}

@@ -426,8 +426,12 @@ const GLTFAvatarInner: React.FC<GLTFAvatarProps> = ({
     const animationFallbacks: Record<string, string[]> = {
       cheer: ['wave', 'dance', 'victory', 'idle'],
       wave: ['cheer', 'idle'],
-      victory: ['cheer', 'wave', 'idle'],
+      // El goblin no trae Wave ni Dance: celebra saltando. Sin este respaldo se quedaría quieto al ganar.
+      victory: ['cheer', 'wave', 'dance', 'jump', 'idle'],
       jump: ['cheer', 'idle'],
+      attack: ['jump', 'idle'],
+      hurt: ['idle'],
+      death: ['idle'],
       dance: ['idle'],
       walk: ['idle'],
       run: ['walk', 'idle'],
@@ -457,6 +461,8 @@ const GLTFAvatarInner: React.FC<GLTFAvatarProps> = ({
           LOOP_ANIMATIONS.includes(resolvedAnim) ? Infinity : 1,
         );
         next.clampWhenFinished = !LOOP_ANIMATIONS.includes(resolvedAnim);
+        // Correr sin clip de run reutiliza el paso: se acelera para que los pies acompañen al desplazamiento.
+        next.timeScale = targetAnim === 'run' ? (resolvedAnim === 'run' ? 1.22 : 1.85) : targetAnim === 'walk' ? 1.28 : 1;
         next.fadeIn(fadeDuration).play();
         setCurrentAnimation(resolvedAnim);
       }
