@@ -1,0 +1,28 @@
+# AcademyGatekeeper en Monad testnet (chainId 10143).
+# Guías: https://docs.monad.xyz/guides/deploy-smart-contract/foundry
+#        https://docs.monad.xyz/guides/verify-smart-contract/foundry
+# Índice de Blitz: https://blitz.devnads.com/resources
+#
+# Despliegue (keystore, no pegar la private key):
+#   forge create contracts/AcademyGatekeeper.sol:AcademyGatekeeper \
+#     --keystore ~/.monskills/keystore/<id> --password "" --broadcast
+# La dirección va a VITE_ACADEMY_CONTRACT. Verificar en MonadVision (Sourcify):
+#   forge verify-contract <addr> contracts/AcademyGatekeeper.sol:AcademyGatekeeper \
+#     --chain 10143 --verifier sourcify \
+#     --verifier-url https://sourcify-api-monad.blockvision.org/
+[profile.default]
+src = "contracts"
+out = "out"
+libs = ["lib"]
+solc = "0.8.24"
+optimizer = true
+optimizer_runs = 200
+metadata = true
+metadata_hash = "none"
+use_literal_content = true
+eth-rpc-url = "https://testnet-rpc.monad.xyz"
+chain_id = 10143
+
+[rpc_endpoints]
+monad_testnet = "https://testnet-rpc.monad.xyz"
+monad = "https://rpc.monad.xyz"

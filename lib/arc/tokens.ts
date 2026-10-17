@@ -1,4 +1,4 @@
-// Feed de tokens de Arc: de dónde salen los monstruos salvajes.
+// Feed de tokens de Monad: de dónde salen los monstruos salvajes.
 //
 // Dos fuentes, ambas públicas y sin API key (verificadas en vivo contra Arc):
 //   · GeckoTerminal /networks/arc/new_pools — el feed de lanzamientos NUEVOS. Es la fuente de descubrimiento:
@@ -70,7 +70,7 @@ export async function fetchNewArcTokens({
   const seen = new Set<string>();
 
   for (let page = 1; page <= pages; page++) {
-    const res = await fetch(`${GT}/networks/arc/new_pools?page=${page}&include=base_token`, { headers: GT_HEADERS });
+    const res = await fetch(`${GT}/networks/${WORLD_CHAIN}/new_pools?page=${page}&include=base_token`, { headers: GT_HEADERS });
     if (!res.ok) throw new Error(`GeckoTerminal ${res.status}`);
     const json = (await res.json()) as { data?: GtPool[]; included?: GtToken[] };
     const logos = new Map<string, string>();
@@ -82,7 +82,7 @@ export async function fetchNewArcTokens({
     for (const pool of json.data ?? []) {
       const a = pool.attributes ?? {};
       const address = addrFromGtId(pool.relationships?.base_token?.data?.id);
-      if (!address || seen.has(address)) continue;
+      if (!address || address === WMON || seen.has(address)) continue;
 
       const liquidityUsd = num(a.reserve_in_usd);
       if (liquidityUsd < minLiquidityUsd) continue;
@@ -123,8 +123,9 @@ interface DsPair {
 /** Tamaño del token: market cap, si falta FDV, y si tampoco hay, la liquidez del pool. */
 const capOf = (p: DsPair): number => p.marketCap || p.fdv || p.liquidity?.usd || 0;
 
-/** USDC nativo de Arc: casi todos los pools cotizan contra él. */
-export const ARC_USDC = '0x3600000000000000000000000000000000000000';
+/** Cadena de los salvajes en DexScreener y GeckoTerminal, y el WMON de mainnet (no es un monstruo). */
+export const WORLD_CHAIN = 'monad';
+export const WMON = '0x3bd359c1119da7da1d913d1c4d2b7c461115433a';
 
 /**
  * Los tokens de Arc que lista DexScreener. No hay un endpoint "todos los tokens de una cadena": se juntan
@@ -132,18 +133,18 @@ export const ARC_USDC = '0x3600000000000000000000000000000000000000';
  */
 export async function fetchDexArcTokens({ minLiquidityUsd = 500 } = {}): Promise<ArcToken[]> {
   const urls = [
-    `${DS}/token-pairs/v1/arc/${ARC_USDC}`,
-    ...['arc', 'arc usdc', 'arc eurc'].map((q) => `${DS}/latest/dex/search?q=${encodeURIComponent(q)}`),
+    `${DS}/token-pairs/v1/${WORLD_CHAIN}/${WMON}`,
+    ...['monad', 'monad mon', 'monad wmon'].map((q) => `${DS}/latest/dex/search?q=${encodeURIComponent(q)}`),
   ];
   const lists = await Promise.all(urls.map((u) => fetch(u).then((r) => (r.ok ? r.json() : null)).catch(() => null)));
   const byToken = new Map<string, DsPair>();
   for (const j of lists) {
     for (const p of ((Array.isArray(j) ? j : j?.pairs) ?? []) as DsPair[]) {
-      if (p.chainId && p.chainId !== 'arc') continue;
-      const flip = p.baseToken?.address?.toLowerCase() === ARC_USDC;
+      if (p.chainId && p.chainId !== WORLD_CHAIN) continue;
+      const flip = p.baseToken?.address?.toLowerCase() === WMON;
       const tok = flip ? p.quoteToken : p.baseToken;
       const addr = tok?.address?.toLowerCase();
-      if (!addr || addr === ARC_USDC || !/^0x[0-9a-f]{40}$/.test(addr)) continue;
+      if (!addr || addr === WMON || !/^0x[0-9a-f]{40}$/.test(addr)) continue;
       const prev = byToken.get(addr);
       if (!prev || (p.liquidity?.usd ?? 0) > (prev.liquidity?.usd ?? 0)) byToken.set(addr, { ...p, baseToken: tok });
     }
@@ -167,7 +168,7 @@ export async function fetchDexArcTokens({ minLiquidityUsd = 500 } = {}): Promise
  * quedamos con el de más liquidez, que es el que marca el precio de referencia.
  */
 export async function fetchArcToken(address: string): Promise<ArcToken | null> {
-  const res = await fetch(`${DS}/tokens/v1/arc/${address}`);
+  const res = await fetch(`${DS}/tokens/v1/${WORLD_CHAIN}/${address}`);
   if (!res.ok) return null;
   const pairs = (await res.json()) as DsPair[];
   if (!Array.isArray(pairs) || pairs.length === 0) return null;
@@ -189,7 +190,7 @@ export async function fetchArcToken(address: string): Promise<ArcToken | null> {
 /** Varios tokens de una (DexScreener acepta hasta 30 direcciones separadas por coma). */
 export async function fetchArcTokens(addresses: string[]): Promise<ArcToken[]> {
   if (addresses.length === 0) return [];
-  const res = await fetch(`${DS}/tokens/v1/arc/${addresses.slice(0, 30).join(',')}`);
+  const res = await fetch(`${DS}/tokens/v1/${WORLD_CHAIN}/${addresses.slice(0, 30).join(',')}`);
   if (!res.ok) return [];
   const pairs = (await res.json()) as DsPair[];
 

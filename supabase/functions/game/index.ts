@@ -88,13 +88,14 @@ const GUEST_RATE: [string, number, number][] = [
   ['guestd', envInt('GUEST_PER_IP_DAY', 150), 86400],
 ];
 const PAY = {
-  chainId: Number(envOr('PAY_CHAIN_ID', '5042002')),
-  chainName: envOr('PAY_CHAIN_NAME', 'Arc Testnet'),
-  rpc: envOr('PAY_RPC_URL', 'https://rpc.testnet.arc.network'),
-  explorer: envOr('PAY_EXPLORER', 'https://testnet.arcscan.app'),
-  token: envOr('PAY_TOKEN', '0x3600000000000000000000000000000000000000').toLowerCase(),
-  decimals: Number(envOr('PAY_DECIMALS', '6')),
-  symbol: envOr('PAY_SYMBOL', 'USDC'),
+  chainId: Number(envOr('PAY_CHAIN_ID', '10143')),
+  chainName: envOr('PAY_CHAIN_NAME', 'Monad Testnet'),
+  rpc: envOr('PAY_RPC_URL', 'https://testnet-rpc.monad.xyz'),
+  explorer: envOr('PAY_EXPLORER', 'https://testnet.monadvision.com'),
+  // WMON de testnet (doc de Monad). El gas se paga en MON nativo; la Mart cobra este ERC-20.
+  token: envOr('PAY_TOKEN', '0xFb8bf4c1CC7a94c73D209a149eA2AbEa852BC541').toLowerCase(),
+  decimals: Number(envOr('PAY_DECIMALS', '18')),
+  symbol: envOr('PAY_SYMBOL', 'WMON'),
   // Por defecto, una dirección de prueba sin dueño (20 bytes al azar): lo que llegue ahí no se recupera.
   treasury: envOr('TREASURY_ADDRESS', '0xafd6153d77380859439ab76f313d244341b6f18f').toLowerCase(),
 };
@@ -109,7 +110,7 @@ const PAY_MAX_AGE_S = 24 * 3600;
 const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
 function isAddr(a: string) { return /^0x[0-9a-f]{40}$/.test(a); }
 const payChain = createPublicClient({ transport: http(PAY.rpc, { timeout: 8_000, retryCount: 1 }) });
-const MAINNET = PAY.chainId === 5042;
+const MAINNET = PAY.chainId === 143;
 const jsonEnv = <T,>(k: string, d: T): T => { try { return { ...d, ...JSON.parse(Deno.env.get(k) ?? '{}') }; } catch { return d; } };
 
 // ---------- token del juego (lo que se holdea, se quema en la Mart y paga los premios) ----------
@@ -118,9 +119,9 @@ const DEAD = '0x000000000000000000000000000000000000dead';
 /** 'treasury' (testnet): el pago va a TREASURY_ADDRESS. 'burn' (mainnet): el token del pago tiene que acabar en 0x…dEaD. */
 const MART_MODE = envOr('MART_MODE', 'treasury') === 'burn' ? 'burn' : 'treasury';
 const TOKEN = {
-  name: envOr('TOKEN_NAME', MAINNET ? PAY.symbol : 'USD Coin (Arc Testnet)'),
-  buyUrl: envOr('TOKEN_BUY_URL', MAINNET ? `https://app.uniswap.org/swap?chain=arc&outputCurrency=${PAY.token}` : 'https://faucet.circle.com/'),
-  chartUrl: envOr('TOKEN_CHART_URL', MAINNET ? `https://dexscreener.com/arc/${PAY.token}` : `${PAY.explorer}/token/${PAY.token}`),
+  name: envOr('TOKEN_NAME', MAINNET ? PAY.symbol : 'WMON (Monad Testnet)'),
+  buyUrl: envOr('TOKEN_BUY_URL', MAINNET ? `https://www.kuru.exchange/` : 'https://faucet.monad.xyz'),
+  chartUrl: envOr('TOKEN_CHART_URL', MAINNET ? `https://dexscreener.com/monad/${PAY.token}` : `${PAY.explorer}/token/${PAY.token}`),
   tokenUrl: `${PAY.explorer}/token/${PAY.token}`,
 };
 /**
@@ -1189,7 +1190,9 @@ async function gtPools(path: string) {
 // contra USDC nativo (top 30 por liquidez) + búsquedas + los lanzamientos nuevos de GeckoTerminal (solo como pista de
 // direcciones), y todo lo ya descubierto queda en `tokens` y se vuelve a consultar. Caché: DS_TTL_MS entre consultas.
 const DS = 'https://api.dexscreener.com';
-const ARC_USDC = '0x3600000000000000000000000000000000000000';
+/** WMON de mainnet: el par contra el que cotizan los salvajes. No es un monstruo. */
+const WORLD_CHAIN = envOr('WORLD_CHAIN', 'monad');
+const WMON = envOr('WORLD_QUOTE', '0x3bd359C1119dA7Da1D913D1C4D2B7c461115433A').toLowerCase();
 const DS_TTL_MS = 3 * 60_000;
 /** Un token cuenta como "en la hierba" si DexScreener lo devolvió hace menos de esto. */
 const DS_FRESH_MS = 30 * 60_000;
@@ -1200,11 +1203,11 @@ const capOf = (p: any) => num(p?.marketCap) || num(p?.fdv) || num(p?.liquidity?.
 /** Pools de DexScreener → token → su pool de más liquidez (el USDC nativo nunca es un monstruo). */
 function dsIndex(pairs: any[], into: Map<string, any>) {
   for (const p of pairs) {
-    if (p?.chainId && p.chainId !== 'arc') continue;
-    const flip = String(p?.baseToken?.address ?? '').toLowerCase() === ARC_USDC;
+    if (p?.chainId && p.chainId !== WORLD_CHAIN) continue;
+    const flip = String(p?.baseToken?.address ?? '').toLowerCase() === WMON;
     const tok = flip ? p.quoteToken : p.baseToken;
     const a = String(tok?.address ?? '').toLowerCase();
-    if (!isAddr(a) || a === ARC_USDC) continue;
+    if (!isAddr(a) || a === WMON) continue;
     if (into.has(a) && num(into.get(a).liquidity?.usd) >= num(p.liquidity?.usd)) continue;
     into.set(a, { ...p, baseToken: tok });
   }
@@ -1224,14 +1227,14 @@ async function tick() {
 
   const ds = new Map<string, any>();
   const [usdcPairs, ...searches] = await Promise.all([
-    dsGet(`/token-pairs/v1/arc/${ARC_USDC}`),
-    ...['arc', 'arc usdc', 'arc eurc'].map((q) => dsGet(`/latest/dex/search?q=${encodeURIComponent(q)}`)),
+    dsGet(`/token-pairs/v1/${WORLD_CHAIN}/${WMON}`),
+    ...[WORLD_CHAIN, `${WORLD_CHAIN} mon`, `${WORLD_CHAIN} wmon`].map((q) => dsGet(`/latest/dex/search?q=${encodeURIComponent(q)}`)),
   ]);
   dsIndex(Array.isArray(usdcPairs) ? usdcPairs : [], ds);
   for (const j of searches) dsIndex(j?.pairs ?? [], ds);
   const hints = [
-    ...await gtPools('/networks/arc/new_pools?page=1&include=base_token'),
-    ...await gtPools('/networks/arc/trending_pools?page=1&include=base_token'),
+    ...await gtPools(`/networks/${WORLD_CHAIN}/new_pools?page=1&include=base_token`),
+    ...await gtPools(`/networks/${WORLD_CHAIN}/trending_pools?page=1&include=base_token`),
   ];
 
   // Lo ya descubierto (primero lo que alguien tiene en su Caja) + las pistas nuevas: detalle por lotes de 30.
@@ -1247,7 +1250,7 @@ async function tick() {
     ...(known ?? []).map((o: any) => o.address),
   ])].filter((a) => !ds.has(a)).slice(0, 150);
   for (let i = 0; i < want.length; i += 30) {
-    const j = await dsGet(`/tokens/v1/arc/${want.slice(i, i + 30).join(',')}`);
+    const j = await dsGet(`/tokens/v1/${WORLD_CHAIN}/${want.slice(i, i + 30).join(',')}`);
     if (Array.isArray(j)) dsIndex(j, ds);
   }
 
