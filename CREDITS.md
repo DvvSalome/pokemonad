@@ -1,10 +1,13 @@
 # Créditos de los assets 3D
 
-**Ningún modelo 3D de este repo es obra nuestra.** Todo lo que se ve en el mundo —el avatar que controlas,
-los monstruos salvajes, los árboles, las ruinas, los embarcaderos, los bancos del parque— sale de packs de
-assets publicados por sus autores bajo licencias libres (CC0 y CC-BY). Lo nuestro es el terreno, la
-dirección de arte, el cel-shading, la instanciación y el juego; los modelos están tomados prestados y este
-documento dice exactamente de dónde.
+**Ningún modelo 3D de este repo es obra nuestra, y todos se sacaron del mismo sitio: [Poly
+Pizza](https://poly.pizza).** Todo lo que se ve en el mundo —el avatar que controlas, los monstruos
+salvajes, los árboles, las ruinas, los embarcaderos, los bancos del parque— se descargó durante el
+desarrollo desde Poly Pizza, que es un buscador de modelos 3D libres: cada modelo llega ya con su autor y su
+licencia (CC0 o CC-BY 3.0) declaradas en la ficha.
+
+Lo nuestro es el terreno, la dirección de arte, el cel-shading, la instanciación y el juego. Los modelos
+están tomados prestados y este documento dice de qué pack y de qué autor sale cada carpeta.
 
 Son **327 archivos `.glb`, ~51 MB**, repartidos en 11 carpetas dentro de `public/`. Cada carpeta es un pack
 distinto, y por eso están separadas: la carpeta *es* la unidad de atribución.
@@ -13,33 +16,33 @@ distinto, y por eso están separadas: la carpeta *es* la unidad de atribución.
 
 ## Tabla de origen
 
+Todos descargados de <https://poly.pizza>. La columna **Autor** es el crédito que pide la ficha de Poly
+Pizza de ese pack.
+
 | Carpeta | Archivos | Pack | Autor | Licencia | Qué hace en el juego |
 |---|---|---|---|---|---|
 | `public/mega/` | 68 | Stylized Nature MegaKit | Quaternius | CC0 | Toda la flora del mundo: árboles, pinos, helechos, setas, cantos rodados, losas de camino. Es el pack que define el aspecto de la región. |
-| `public/monsters/` | 65 | Ultimate Monsters / LowPoly Animated Monsters | Quaternius | CC0 | Los monstruos salvajes que capturas. Vienen con esqueleto y animaciones dentro del GLB (Idle, Walk, Punch, Bite, HitReact, Death, Dance). |
+| `public/monsters/` | 65 | Ultimate Monsters | Quaternius | CC0 | Los monstruos salvajes que capturas. Vienen con esqueleto y animaciones dentro del GLB (Idle, Walk, Punch, Bite, HitReact, Death, Dance). |
 | `public/nature/` | 72 | Nature Kit | Kenney | CC0 | Props sueltos de bosque: troncos, tocones, setas, nenúfares, cactus, estatuas, musgo colgante. |
-| `public/pirate/` | 28 | Pirate Kit | Kenney / Quaternius (vía poly.pizza) | CC0 | La costa: embarcaderos, barcos, cañones, casas, cofres, palmeras. Las palmeras además visten las dunas. |
-| `public/dungeon/` | 27 | Modular Dungeons | Quaternius (vía poly.pizza) | CC0 | Las ruinas y el fuerte de la meseta: arcos, columnas, muros modulares, barriles, antorchas, cofres. |
-| `public/characters/` | 17 | NPCs y avatares de ciudadano | **J-Toastie** (poly.pizza) | **CC-BY 3.0** | El elenco de entrenadores: ciudadanos, policías, trabajadores, crypto-bro, Papá Noel, el tipo-gallina. |
-| `public/characters/` (4 de ellos) | 4 | Animated Monster Pack / Ultimate Monsters | Quaternius | CC0 | Los cuatro personajes jugables animados: goblin, esqueleto, dragón y blob. Ver *Modelos derivados* abajo. |
-| `public/critters/` | 9 | Cube World Kit | (vía poly.pizza) | CC0 | Fauna ambiental sin IA: ovejas, cerdos, gallinas, pollitos, mapaches, erizos, perros, gatos. |
+| `public/pirate/` | 28 | Pirate Kit | Kenney | CC0 | La costa: embarcaderos, barcos, cañones, casas, cofres, palmeras. Las palmeras además visten las dunas. |
+| `public/dungeon/` | 27 | Modular Dungeons | Quaternius | CC0 | Las ruinas y el fuerte de la meseta: arcos, columnas, muros modulares, barriles, antorchas, cofres. |
+| `public/characters/` | 17 | NPCs y avatares de ciudadano | **J-Toastie** | **CC-BY 3.0** | El elenco de entrenadores: ciudadanos, policías, trabajadores, crypto-bro, Papá Noel, el tipo-gallina. |
+| `public/characters/` (4 de ellos) | 4 | Ultimate Monsters / Animated Monster Pack | Quaternius | CC0 | Los cuatro personajes jugables animados: goblin, esqueleto, dragón y blob. Ver *Modelos derivados* abajo. |
+| `public/critters/` | 9 | Cube World Kit | Cube World Kit | CC0 | Fauna ambiental sin IA: ovejas, cerdos, gallinas, pollitos, mapaches, erizos, perros, gatos. |
 | `public/park/` | 17 | Pretty Park Set | **Isa Lousberg** | CC0 | El jardín diseñado a mano del prado: banco, farola, papelera, setos, fuente. |
-| `public/camp/` | 7 | Props de campamento | **J-Toastie** (poly.pizza) | **CC-BY 3.0** | El campamento inicial: tienda, hoguera, troncos, hacha. |
-| `public/props/` | 5 | Cube World Kit | (vía poly.pizza) | CC0 | Cristales, cofres y cajones repartidos por la plaza y el campamento. |
+| `public/camp/` | 7 | Props de campamento | **J-Toastie** | **CC-BY 3.0** | El campamento inicial: tienda, hoguera, troncos, hacha. |
+| `public/props/` | 5 | Cube World Kit | Cube World Kit | CC0 | Cristales, cofres y cajones repartidos por la plaza y el campamento. |
 | `public/stylized/` | 12 | Ultimate Stylized Nature Pack | Quaternius | CC0 | **Pack anterior, ya no se carga.** Se queda en el repo como referencia del cambio de look (ver abajo). |
 
 La paleta de texturas con la que se armonizan los packs entre sí es de **Kay Lousberg**.
 
-### Enlaces a las fuentes
+### Dónde buscarlos
 
-- **Quaternius** — <https://quaternius.com/> · packs en <https://quaternius.itch.io/>
-  - Stylized Nature MegaKit: <https://quaternius.com/packs/stylizednaturemegakit.html> · <https://quaternius.itch.io/stylized-nature-megakit>
-- **Kenney** — <https://kenney.nl/assets> (Nature Kit, Pirate Kit)
-- **Poly Pizza** — <https://poly.pizza/> (J-Toastie, Cube World Kit, Modular Dungeons, Pretty Park Set)
-- **Kay Lousberg (KayKit)** — <https://kaylousberg.com/>
-
-> ⚠️ **Pendiente:** sustituir estos enlaces genéricos por la URL exacta de cada pack tal y como se
-> descargó, para que la atribución CC-BY sea verificable modelo a modelo.
+- **Poly Pizza** — <https://poly.pizza> — de aquí salió todo. Buscando el nombre del pack o del autor
+  aparece la ficha con la licencia y la descarga en `.glb`, que es el formato que servimos tal cual.
+- Páginas de los autores, por si se quiere el pack completo en origen:
+  **Quaternius** <https://quaternius.com> · **Kenney** <https://kenney.nl/assets> ·
+  **Kay Lousberg** <https://kaylousberg.com>
 
 ---
 
