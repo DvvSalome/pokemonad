@@ -1,0 +1,32 @@
+/* Realce en pantalla de la animación de captura (encima del canvas, debajo de los paneles). Solo
+   gradientes y opacidad: nada de backdrop-filter. --x/--y = monstruo en pantalla (rAF de CaptureOverlay). */
+.pg-cap > .pg-capfx { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.pg-capfx > i { position: absolute; inset: 0; opacity: 0; }
+
+/* Tensión mientras tiembla: los bordes se oscurecen poco a poco. */
+.pg-capfx .vig {
+  background: radial-gradient(ellipse at var(--x, 50%) var(--y, 50%), transparent 38%, rgba(8, 16, 34, 0.34) 100%);
+  transition: opacity 0.6s ease;
+}
+.pg-capfx.p-shake .vig { opacity: 1; }
+.pg-capfx.p-absorb .vig { opacity: 0.45; }
+
+.pg-capfx.p-absorb .fl { animation: pgCapFlash 0.45s ease-out both; background: radial-gradient(circle at var(--x) var(--y), rgba(255, 255, 255, 0.75), rgba(214, 236, 255, 0.25) 18%, transparent 42%); }
+.pg-capfx.p-broke .fl { animation: pgCapFlash 0.5s ease-out both; background: radial-gradient(circle at var(--x) var(--y), rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.3) 22%, transparent 55%); }
+.pg-capfx.p-caught .fl {
+  animation: pgCapFlash 0.9s ease-out both;
+  background: radial-gradient(circle at var(--x) var(--y), rgba(255, 244, 200, 0.7), color-mix(in srgb, var(--sun) 35%, transparent) 20%, transparent 50%);
+}
+/* Rayos dorados que giran detrás de la bola al atraparlo. */
+.pg-capfx.p-caught .rays {
+  animation: pgCapRays 1.35s ease-out both;
+  background: repeating-conic-gradient(from 0deg at var(--x) var(--y), color-mix(in srgb, var(--sun) 22%, transparent) 0deg 7deg, transparent 7deg 22deg);
+  -webkit-mask-image: radial-gradient(circle at var(--x) var(--y), #000 0, #000 10%, transparent 38%);
+  mask-image: radial-gradient(circle at var(--x) var(--y), #000 0, #000 10%, transparent 38%);
+}
+@keyframes pgCapFlash { 0% { opacity: 0; } 12% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes pgCapRays { 0% { opacity: 0; transform: rotate(0deg) scale(0.9); } 20% { opacity: 1; } 100% { opacity: 0; transform: rotate(0deg) scale(1.08); } }
+
+/* La calificación del tiro entra con un pequeño golpe. */
+.pg-cap-q.pop { animation: pgCapQ 0.5s cubic-bezier(0.2, 1.6, 0.4, 1) both; }
+@keyframes pgCapQ { 0% { transform: translateX(-50%) scale(0.4); opacity: 0; } 100% { transform: translateX(-50%) scale(1); opacity: 1; } }

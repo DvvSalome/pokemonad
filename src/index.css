@@ -1,0 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/*
+ * Fondo OSCURO a propósito (antes era #bfe4ff, celeste casi blanco).
+ *
+ * El canvas 3D se dibuja encima, así que este color normalmente no se ve. Pero si el compositor del
+ * navegador se salta el canvas aunque sea un frame (algo que provocan extensiones que inyectan en la
+ * página, cambios de capa, o el propio compositor), lo que se ve por debajo es ESTE color — y con un
+ * celeste casi blanco eso se percibe como un DESTELLO BLANCO al moverse. Medido: el buffer WebGL sale
+ * limpio (0 frames blancos en 600 frames de movimiento), así que el destello venía de la composición,
+ * no del render. Con un fondo oscuro, un frame perdido se vuelve un parpadeo mínimo en vez de un flash.
+ *
+ * Las pantallas de inicio traen su propio fondo (.pg-bg-sky), así que esto no cambia cómo se ven.
+ */
+html, body, #root {
+  width: 100%; height: 100%; overflow: hidden;
+  background: #16241d;
+  font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Capa de composición propia y aislada para el árbol de la app: evita que repintados del HUD (o de lo
+   que inyecte una extensión) invaliden la capa del canvas. */
+#root { isolation: isolate; }
+
+canvas {
+  touch-action: none;
+  /* Promover el canvas a su propia capa de GPU y aislarlo: el compositor lo trata como una capa estable
+     en vez de repintarlo junto con el resto de la página. */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform;
+  /* Fondo propio: si por lo que sea el canvas se compone con hueco, tapa con el color del cielo en vez
+     de dejar ver el fondo de la página. */
+  background: #16241d;
+}
+
+button { font-family: inherit; }

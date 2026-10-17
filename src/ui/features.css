@@ -1,0 +1,82 @@
+/* Ventanas nuevas: Token, Intercambios, Admin de premios, Legal. Mismo lenguaje que .pg-win (borde grueso, sombra sólida). */
+.pg-win.k-token { --hc: #f2b01e; } .pg-win.k-trade { --hc: #19b3a6; } .pg-win.k-admin { --hc: #e2553b; } .pg-win.k-legal { --hc: #5b6b82; }
+
+.pg-f-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 6px 0; font: 600 14px var(--body); color: var(--ink2); }
+.pg-f-row > b { color: var(--ink); font-weight: 800; }
+.pg-f-ca {
+  display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 14px; background: #fff;
+  border: 3px solid var(--outline); box-shadow: 0 3px 0 var(--outline);
+}
+.pg-f-ca code { flex: 1; min-width: 0; overflow-wrap: anywhere; font: 700 13px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ink); }
+.pg-f-actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 4px; }
+.pg-f-actions a.pg-btn { text-decoration: none; }
+
+.pg-f-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 10px 0; }
+.pg-f-stat { padding: 10px 12px; border-radius: 14px; background: #fff; border: 3px solid var(--outline); }
+.pg-f-stat small { display: block; font: 700 12px var(--body); color: var(--ink2); text-transform: uppercase; letter-spacing: 0.04em; }
+.pg-f-stat b { font: 800 20px var(--display); color: var(--ink); }
+
+.pg-f-tiers { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.pg-f-tier { padding: 12px; border-radius: 16px; background: #fff; border: 3px solid var(--outline); position: relative; }
+.pg-f-tier.on { background: #fff6dc; border-color: #d99a00; box-shadow: 0 4px 0 #b37f00; }
+.pg-f-tier b { display: block; font: 800 17px var(--display); color: var(--ink); }
+.pg-f-tier span { display: block; font: 600 13px/1.35 var(--body); color: var(--ink2); }
+.pg-f-tier em { position: absolute; top: 8px; right: 10px; font: 800 11px var(--body); font-style: normal; color: #9a6b00; }
+
+.pg-tierchip {
+  display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; padding: 1px 8px; border-radius: 999px;
+  font: 800 11px var(--body); color: #5c3d00; background: #ffd35a; border: 2px solid var(--outline); cursor: pointer;
+}
+.pg-tierchip.t-Veteran { background: #b9e2ff; color: #0b3a5c; }
+.pg-tierchip.t-Champion { background: #ffb3c4; color: #5c0b1f; }
+
+.pg-f-table { width: 100%; border-collapse: collapse; font: 600 13px var(--body); color: var(--ink); }
+.pg-f-table th { text-align: left; font: 800 12px var(--body); color: var(--ink2); padding: 6px 6px; border-bottom: 2px solid #d5deea; }
+.pg-f-table td { padding: 7px 6px; border-bottom: 1px solid #e3e9f2; vertical-align: middle; }
+.pg-f-table code { font: 700 12px ui-monospace, Menlo, monospace; }
+.pg-f-tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font: 800 11px var(--body); border: 2px solid var(--outline); background: #eef3f9; }
+.pg-f-tag.paid { background: #d9e1f6; } .pg-f-tag.pending { background: #fff1c9; }
+.pg-f-err { margin: 8px 0; padding: 8px 12px; border-radius: 12px; background: #fdecee; border: 2px solid #ff4f6d; font: 700 13px var(--body); color: #8a1830; }
+.pg-f-ok { margin: 8px 0; padding: 8px 12px; border-radius: 12px; background: #e7f9ec; border: 2px solid #2e59c0; font: 700 13px var(--body); color: #132758; }
+
+.pg-f-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 12px; }
+.pg-f-tabs button {
+  padding: 6px 12px; border-radius: 999px; border: 3px solid var(--outline); background: #fff; cursor: pointer;
+  font: 800 13px var(--body); color: var(--ink);
+}
+.pg-f-tabs button.on { background: var(--hc); color: #fff; }
+
+.pg-f-list { display: flex; flex-direction: column; gap: 8px; }
+.pg-f-item {
+  display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 14px; background: #fff; border: 3px solid var(--outline);
+}
+.pg-f-item .grow { flex: 1; min-width: 0; }
+.pg-f-item .grow b { display: block; font: 800 15px var(--display); color: var(--ink); }
+.pg-f-item .grow span { font: 600 12px var(--body); color: var(--ink2); }
+.pg-f-mons { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; max-height: 260px; overflow: auto; padding: 2px; }
+.pg-f-mon {
+  padding: 8px; border-radius: 12px; background: #fff; border: 3px solid #cfd9e6; cursor: pointer; text-align: left;
+  font: 700 13px var(--body); color: var(--ink);
+}
+.pg-f-mon.on { border-color: var(--hc); box-shadow: 0 3px 0 var(--hc); }
+.pg-f-mon small { display: block; font: 600 11px var(--body); color: var(--ink2); }
+.pg-f-input {
+  flex: 1; min-width: 160px; padding: 8px 12px; border-radius: 12px; border: 3px solid var(--outline); font: 700 14px var(--body); color: var(--ink);
+}
+
+.pg-legal { font: 500 14px/1.55 var(--body); color: var(--ink2); }
+.pg-legal h4 { margin: 14px 0 4px; font: 800 15px var(--display); color: var(--ink); }
+.pg-legal p, .pg-legal li { margin: 4px 0; }
+.pg-legal .draft {
+  margin: 0 0 10px; padding: 10px 12px; border-radius: 12px; background: #fff4d6; border: 2px solid #f2c14e; font: 800 13px var(--body); color: #6b4a00;
+}
+.pg-legal-links { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; font: 700 12px var(--body); }
+
+/* Monstruo Dorado activo: aviso arriba en el centro. */
+.pg-event-banner {
+  position: fixed; left: 50%; top: 14px; transform: translateX(-50%); z-index: 30; display: block;
+  padding: 8px 16px; border-radius: 999px; background: linear-gradient(180deg, #ffe07a, #f2b01e); border: 3px solid var(--outline);
+  box-shadow: 0 4px 0 var(--outline); font: 800 14px var(--display); color: #3d2a00; cursor: pointer; white-space: nowrap;
+}
+.pg-event-banner b { font-weight: 900; }
+@media (max-width: 640px) { .pg-event-banner { top: 64px; font-size: 12px; } }

@@ -1,0 +1,33 @@
+/* Selector de idioma. Oscuro en la portada (junto a la píldora "Live on Arc"), tarjeta navy dentro del menú. */
+.pg-lang { display: inline-flex; align-items: center; gap: 10px; pointer-events: auto; }
+.pg-lang-opts { position: relative; display: inline-flex; padding: 3px; border-radius: 99px; gap: 2px; }
+.pg-lang-opts button {
+  border: 0; cursor: pointer; border-radius: 99px; padding: 6px 13px; min-width: 44px;
+  font: 800 12px var(--display); letter-spacing: 1.5px; background: transparent;
+  transition: background 0.15s, color 0.15s, transform 0.15s var(--pm-pop, ease), box-shadow 0.15s;
+}
+.pg-lang-opts button:active { transform: scale(0.92); }
+.pg-lang-opts button:focus-visible { outline: 2px solid var(--pm-gold, #ffd84a); outline-offset: 2px; }
+.pg-lang-opts button.on { animation: pgLangOn 0.3s var(--pm-pop, ease); }
+@keyframes pgLangOn { from { transform: scale(0.85); } }
+
+.pg-lang.dark { margin-left: auto; }
+.pg-lang.dark .pg-lang-opts { background: rgba(10, 15, 28, 0.72); border: 1.5px solid rgba(255, 255, 255, 0.2); box-shadow: 0 3px 0 rgba(7, 18, 14, 0.6); }
+.pg-lang.dark button { color: rgba(255, 255, 255, 0.7); }
+.pg-lang.dark button:hover { color: #fff; background: rgba(255, 255, 255, 0.08); }
+.pg-lang.dark button.on { background: linear-gradient(180deg, #ffe98a, #ffd84a); color: #15233b; box-shadow: 0 2px 0 #9a7300, 0 0 12px rgba(255, 216, 74, 0.5); }
+
+.pg-lang.light {
+  position: relative; justify-content: space-between; border-radius: 16px; padding: 8px 8px 8px 16px;
+  background: var(--pm-bg, #161a30); border: 1.5px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 3px 0 var(--pm-edge, #07120e), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+.pg-lang-lbl { font: 800 15px var(--display); color: var(--ink); }
+.pg-lang.light .pg-lang-lbl { color: var(--pm-text, #f4f7ff); }
+.pg-lang.light .pg-lang-opts { background: var(--pm-well, #0a0f1c); box-shadow: inset 0 2px 0 rgba(0, 0, 0, 0.4); }
+.pg-lang.light button { color: var(--pm-muted, #8e9ab4); }
+.pg-lang.light button:hover { color: #fff; }
+.pg-lang.light button.on {
+  color: #fff; background: linear-gradient(180deg, var(--pm-arc, #4c9bff), var(--pm-arc2, #2f6bff));
+  box-shadow: 0 2px 0 #163d9e, 0 0 12px rgba(76, 155, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}

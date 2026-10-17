@@ -1,0 +1,19 @@
+/* Aviso de límite de entrada (demasiados invitados nuevos desde la misma red). No tapa el juego. */
+.pg-limit {
+  position: fixed; left: 50%; top: 14px; z-index: 60; transform: translateX(-50%);
+  width: min(440px, calc(100vw - 24px)); padding: 12px 14px; border-radius: 16px; pointer-events: auto;
+  background: #fff8e1; color: var(--ink); border: 3px solid #15233b; box-shadow: 0 4px 0 #15233b, 0 10px 24px rgba(0, 0, 0, 0.18);
+  font: 600 14px/1.4 var(--body, system-ui);
+}
+.pg-limit-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pg-limit-head b { font: 800 16px var(--display); }
+.pg-limit p { margin: 6px 0 10px; }
+.pg-limit-x { border: 0; background: transparent; cursor: pointer; font-size: 15px; color: var(--muted, #555); padding: 2px 6px; }
+.pg-limit-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.pg-limit-row + .pg-limit-row { margin-top: 10px; }
+.pg-limit-row input {
+  flex: 1; min-width: 0; padding: 8px 10px; border-radius: 10px; border: 2px solid rgba(21, 35, 59, 0.3);
+  font: 700 13px ui-monospace, monospace; background: #fff; color: var(--ink);
+}
+.pg-limit-link { border: 0; background: transparent; cursor: pointer; padding: 0; color: #1f5fbf; font: 700 13px var(--body, system-ui); text-decoration: underline; }
+.pg-limit-err { color: #b3261e; margin: 8px 0 0 !important; }
