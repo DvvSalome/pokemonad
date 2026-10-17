@@ -7,6 +7,11 @@
 //
 // La noche también se subió de suelo: antes caía a un gris azulado apagado. Ahora es un azul lunar
 // saturado, para que abrir el juego de noche siga siendo bonito en vez de parecer un bug.
+//
+// La paleta de día es otra desde la expansión del mundo: antes era el celeste de manual (cenit #3a80dc,
+// horizonte casi blanco) que comparte media saga. Ahora el cenit es un índigo profundo y el horizonte
+// —que es también el color de la niebla— tira a menta. El contraste frío/cálido lo pone la direccional,
+// más dorada que antes: con un cielo así, la luz amarilla es lo que mantiene la hierba verde y no azul.
 import React, { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
@@ -71,13 +76,13 @@ export const DayNightCycle: React.FC<DayNightCycleProps> = ({ enabled = true, ta
   const hemiRef = useRef<THREE.HemisphereLight>(null);
   const directionalRef = useRef<THREE.DirectionalLight>(null);
 
-  const curAmbient = useRef(new THREE.Color('#a8c4d8'));
-  const curDir = useRef(new THREE.Color('#fff6e0'));
-  const curSky = useRef(new THREE.Color('#bfe4ff'));
-  const curGround = useRef(new THREE.Color('#4e7a46'));
-  const curTop = useRef(new THREE.Color('#3f86dd'));
-  const curHorizon = useRef(new THREE.Color('#c3e7ff'));
-  const curGlow = useRef(new THREE.Color('#2e2a20'));
+  const curAmbient = useRef(new THREE.Color('#93a6dc'));
+  const curDir = useRef(new THREE.Color('#ffeec4'));
+  const curSky = useRef(new THREE.Color('#a9e6d8'));
+  const curGround = useRef(new THREE.Color('#44704a'));
+  const curTop = useRef(new THREE.Color('#2457a8'));
+  const curHorizon = useRef(new THREE.Color('#a9e6d8'));
+  const curGlow = useRef(new THREE.Color('#3a2c1c'));
   const curAi = useRef(0.42);
   const curDi = useRef(1.6);
   const curHemi = useRef(0.5);
@@ -87,20 +92,20 @@ export const DayNightCycle: React.FC<DayNightCycleProps> = ({ enabled = true, ta
   // es lo que se lee como atardecer; con ambiente también cálido todo se tiñe de un marrón turbio.
   // `glow` es lo que la niebla suma mirando hacia el sol (ver world/atmo/fog.ts): negro = nada.
   const timeConfig = useMemo<Keyframe[]>(() => [
-    { h: 0, ac: '#56689f', ai: 0.38, dc: '#8fa8ee', di: 0.62, sky: '#2a3a70', ground: '#1c2c48', hemi: 0.42, top: '#070c26', horizon: '#26386a', glow: '#000000' },
-    { h: 5, ac: '#56689f', ai: 0.38, dc: '#8fa8ee', di: 0.62, sky: '#2a3a70', ground: '#1c2c48', hemi: 0.42, top: '#070c26', horizon: '#26386a', glow: '#000000' },
-    { h: 5.8, ac: '#7a78a6', ai: 0.4, dc: '#c9a6d8', di: 0.72, sky: '#7a74a8', ground: '#2e3a4a', hemi: 0.45, top: '#2c3a78', horizon: '#b590a8', glow: '#40241c' },
-    { h: 6.8, ac: '#a09ab8', ai: 0.42, dc: '#ffc690', di: 1.1, sky: '#f0c4b0', ground: '#56604a', hemi: 0.5, top: '#5a7cc4', horizon: '#f2c4ae', glow: '#a4582a' },
-    { h: 8, ac: '#a0bcd6', ai: 0.42, dc: '#ffdcaa', di: 1.45, sky: '#a6d8f5', ground: '#50784a', hemi: 0.5, top: '#4a8ad8', horizon: '#bfe2f8', glow: '#4a3a26' },
-    { h: 10, ac: '#a2c0de', ai: 0.42, dc: '#fff2d8', di: 1.65, sky: '#bfe4ff', ground: '#557a44', hemi: 0.5, top: '#3a80dc', horizon: '#c6e8ff', glow: '#2e2a20' },
-    { h: 14, ac: '#a2c0de', ai: 0.42, dc: '#fff2d8', di: 1.65, sky: '#bfe4ff', ground: '#557a44', hemi: 0.5, top: '#3a80dc', horizon: '#c6e8ff', glow: '#2e2a20' },
-    { h: 16, ac: '#a3bccd', ai: 0.42, dc: '#ffd9a2', di: 1.5, sky: '#aadcf8', ground: '#557a44', hemi: 0.5, top: '#4486d6', horizon: '#c9e4f4', glow: '#4a3a24' },
-    { h: 17.5, ac: '#a4a8c8', ai: 0.42, dc: '#ffc98a', di: 1.3, sky: '#dcc8cc', ground: '#56604a', hemi: 0.5, top: '#4c70bc', horizon: '#d8cccc', glow: '#9a5a26' },
-    { h: 18.6, ac: '#9a98c4', ai: 0.42, dc: '#ffb880', di: 1.05, sky: '#d0b0c0', ground: '#4a5048', hemi: 0.5, top: '#42549e', horizon: '#c8a8bc', glow: '#d8702c' },
-    { h: 19.4, ac: '#7a78b0', ai: 0.4, dc: '#c89ac8', di: 0.75, sky: '#8a78b0', ground: '#2e3450', hemi: 0.46, top: '#2a306c', horizon: '#9a80a6', glow: '#7a2e2a' },
-    { h: 20.5, ac: '#5a6aa4', ai: 0.39, dc: '#93aaee', di: 0.62, sky: '#34407a', ground: '#1e2e4c', hemi: 0.43, top: '#0e1434', horizon: '#2e3c70', glow: '#08040c' },
-    { h: 22, ac: '#56689f', ai: 0.38, dc: '#8fa8ee', di: 0.62, sky: '#2a3a70', ground: '#1c2c48', hemi: 0.42, top: '#070c26', horizon: '#26386a', glow: '#000000' },
-    { h: 24, ac: '#56689f', ai: 0.38, dc: '#8fa8ee', di: 0.62, sky: '#2a3a70', ground: '#1c2c48', hemi: 0.42, top: '#070c26', horizon: '#26386a', glow: '#000000' },
+    { h: 0, ac: '#5560a6', ai: 0.38, dc: '#92a0f2', di: 0.62, sky: '#283372', ground: '#18233f', hemi: 0.42, top: '#080a24', horizon: '#1f2a5e', glow: '#000000' },
+    { h: 5, ac: '#5560a6', ai: 0.38, dc: '#92a0f2', di: 0.62, sky: '#283372', ground: '#18233f', hemi: 0.42, top: '#080a24', horizon: '#1f2a5e', glow: '#000000' },
+    { h: 5.8, ac: '#7d76ac', ai: 0.4, dc: '#c79ad8', di: 0.72, sky: '#7a6fa8', ground: '#2c3648', hemi: 0.45, top: '#2a2c66', horizon: '#b07aa0', glow: '#4a2420' },
+    { h: 6.8, ac: '#9b93bc', ai: 0.42, dc: '#ffc08a', di: 1.1, sky: '#e8b8ac', ground: '#4e5c48', hemi: 0.5, top: '#3f4f9e', horizon: '#f0b49a', glow: '#a8522a' },
+    { h: 8, ac: '#95a8da', ai: 0.42, dc: '#ffe3b0', di: 1.45, sky: '#9fdfd4', ground: '#46724a', hemi: 0.5, top: '#2a62b4', horizon: '#bdeadd', glow: '#50381f' },
+    { h: 10, ac: '#93a6dc', ai: 0.42, dc: '#ffeec4', di: 1.68, sky: '#a9e6d8', ground: '#44704a', hemi: 0.5, top: '#2457a8', horizon: '#a9e6d8', glow: '#3a2c1c' },
+    { h: 14, ac: '#93a6dc', ai: 0.42, dc: '#ffeec4', di: 1.68, sky: '#a9e6d8', ground: '#44704a', hemi: 0.5, top: '#2457a8', horizon: '#a9e6d8', glow: '#3a2c1c' },
+    { h: 16, ac: '#9ca6d2', ai: 0.42, dc: '#ffd9a0', di: 1.5, sky: '#a8dccb', ground: '#44704a', hemi: 0.5, top: '#2b5fae', horizon: '#c4e4d2', glow: '#55381c' },
+    { h: 17.5, ac: '#9c9ac8', ai: 0.42, dc: '#ffc184', di: 1.3, sky: '#d8bcc0', ground: '#4a5448', hemi: 0.5, top: '#36479c', horizon: '#e4b0a8', glow: '#a05426' },
+    { h: 18.6, ac: '#938ec4', ai: 0.42, dc: '#ff9f6e', di: 1.05, sky: '#c49ab8', ground: '#444a48', hemi: 0.5, top: '#2e3480', horizon: '#c88ea8', glow: '#dc6a28' },
+    { h: 19.4, ac: '#7b74b4', ai: 0.4, dc: '#b68ad0', di: 0.75, sky: '#8672ac', ground: '#2c3250', hemi: 0.46, top: '#1e2060', horizon: '#8f6a9e', glow: '#7a2a30' },
+    { h: 20.5, ac: '#5a62a8', ai: 0.39, dc: '#94a4f2', di: 0.62, sky: '#30397a', ground: '#1c2744', hemi: 0.43, top: '#101436', horizon: '#2b3468', glow: '#08040c' },
+    { h: 22, ac: '#5560a6', ai: 0.38, dc: '#92a0f2', di: 0.62, sky: '#283372', ground: '#18233f', hemi: 0.42, top: '#080a24', horizon: '#1f2a5e', glow: '#000000' },
+    { h: 24, ac: '#5560a6', ai: 0.38, dc: '#92a0f2', di: 0.62, sky: '#283372', ground: '#18233f', hemi: 0.42, top: '#080a24', horizon: '#1f2a5e', glow: '#000000' },
   ], []);
 
   // La direccional apunta a un objeto que movemos nosotros, no al origen implícito.

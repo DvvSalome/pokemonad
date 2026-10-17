@@ -8,10 +8,10 @@ import * as THREE from 'three';
 
 export const SUN = {
   /** Color de la luz direccional. */
-  color: new THREE.Color('#fff6e0'),
+  color: new THREE.Color('#ffeec4'),
   intensity: 1.6,
   /** Color de la luz ambiental. */
-  ambient: new THREE.Color('#a8c4d8'),
+  ambient: new THREE.Color('#93a6dc'),
   ambientIntensity: 0.42,
 };
 
@@ -21,12 +21,12 @@ export const SUN = {
  * mediodía y la niebla del horizonte no pegaba con nada.
  */
 export const SKY = {
-  top: new THREE.Color('#3f86dd'),
-  horizon: new THREE.Color('#c3e7ff'),
+  top: new THREE.Color('#2457a8'),
+  horizon: new THREE.Color('#a9e6d8'),
   /** La niebla iguala al horizonte: es lo que hace que la distancia se disuelva en el cielo. */
-  fog: new THREE.Color('#c3e7ff'),
+  fog: new THREE.Color('#a9e6d8'),
   /** Resplandor que la niebla y el horizonte suman en dirección al sol (perspectiva aérea). */
-  glow: new THREE.Color('#2e2a20'),
+  glow: new THREE.Color('#3a2c1c'),
   /**
    * Dirección del sol VISIBLE en la cúpula. Se separa de la direccional a propósito: la luz que da sombra
    * no se mueve (encaje a texel, ver DayNightCycle), el disco sí recorre el cielo con la hora.

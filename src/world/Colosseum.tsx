@@ -1,4 +1,4 @@
-// El coliseo de combate, dentro del mapa (ARENA en terrain.ts): arena de piedra y tierra batida, barrera
+// Los coliseos de la región (COLISEUMS en terrain.ts): arena de piedra y tierra batida, barrera
 // baja, gradas de madera escalonadas, muralla con almenas, torres con tejado cónico, portón de arco al
 // oeste, estandartes azules (lado del jugador, este) y rojos (lado del salvaje, oeste), braseros y antorchas
 // con fuego que parpadea y brilla más de noche. Fuera, el ramal que llega desde el camino del sur (PATHS.arena)
@@ -6,30 +6,57 @@
 //
 // Todo lo repetido va instanciado (almenas, estandartes, llamas, público) y la mampostería fusionada en unas
 // pocas geometrías: el recinto entero son unas cuantas decenas de draw calls.
+//
+// Hay nueve sedes, una por bioma. Comparten la planta y la geometría —que se construye UNA sola vez y se
+// reutiliza en todas, porque nueve recintos construidos por separado serían nueve veces el mismo merge—
+// y se diferencian por el giro del portón y por su paleta (ColiseumSite.theme). Solo la sede principal
+// tiene camino de llegada con puestos, público y combates: las demás están ahí para encontrarlas.
 
 import React, { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { toonMaterial } from './toon';
-import { ARENA, COLISEUM, GATE_HALF, PATHS, arenaY, heightAt } from './terrain';
+import { ARENA, COLISEUMS, COLISEUM, COLISEUM_SCALE, GATE_HALF, PATHS, arenaY, heightAt, type ColiseumSite } from './terrain';
 import { stage } from './arenaLayout';
 import { useBattle } from './battleStore';
 import { t as tr, onLangChange } from '../i18n';
 
 const TAU = Math.PI * 2;
+/**
+ * La geometría de este archivo se escribe en las unidades de siempre y el recinto entero se escala por
+ * COLISEUM_SCALE al colocarlo. Así el edificio crece sin tocar una sola cota: lo único que hay que hacer
+ * es traer los radios del terreno (que ya vienen multiplicados) de vuelta a unidades locales.
+ */
+const S = COLISEUM_SCALE;
+const C = {
+  floor: COLISEUM.floor / S, barrier: COLISEUM.barrier / S, stands0: COLISEUM.stands0 / S,
+  wall: COLISEUM.wall / S, wallT: COLISEUM.wallT / S,
+};
+const GH = GATE_HALF / S;
 /** Suelo del recinto relativo a la arena de piedra (el terreno está aplanado 0.14 m por debajo). */
 const G = -0.14;
 const WALL_H = 4.2;
 const BARRIER_H = 1.3;
 const ROWS = 4, ROW_D = 0.95, ROW_H = 0.62, ROW_Y0 = 0.75;
-const rowR = (i: number) => COLISEUM.stands0 + i * ROW_D;
+const rowR = (i: number) => C.stands0 + i * ROW_D;
 const rowY = (i: number) => ROW_Y0 + i * ROW_H;
 const BLUE = 0x2f64c9, RED = 0xc23a2e, GOLD = 0xf2c14e;
 const opt = { occlude: false } as const;
 
+type Theme = ColiseumSite['theme'];
+/** Oscurece un color multiplicando sus canales: las contrahuellas y las cornisas de cada paleta. */
+const shade = (hex: number, k: number) =>
+  ((Math.round(((hex >> 16) & 255) * k) << 16) | (Math.round(((hex >> 8) & 255) * k) << 8) | Math.round((hex & 255) * k));
+const hexStr = (n: number) => `#${n.toString(16).padStart(6, '0')}`;
+/** Un punto en coordenadas locales del recinto, llevado al mundo (deshace el giro de la sede). */
+function toWorld(s: ColiseumSite, lx: number, lz: number): [number, number] {
+  const c = Math.cos(s.rot), sn = Math.sin(s.rot);
+  return [s.x + lx * c + lz * sn, s.z - lx * sn + lz * c];
+}
+
 /** Medio ángulo del hueco de la puerta (oeste, θ = π) a un radio dado. */
-const gapAt = (r: number, half = GATE_HALF + 0.2) => Math.asin(Math.min(0.95, half / r));
+const gapAt = (r: number, half = GH + 0.2) => Math.asin(Math.min(0.95, half / r));
 /** Distancia angular al oeste (la puerta). */
 const fromGate = (a: number) => Math.abs(Math.atan2(Math.sin(a - Math.PI), Math.cos(a - Math.PI)));
 
@@ -67,8 +94,8 @@ function canvasTex(w: number, h: number, draw: (g: CanvasRenderingContext2D) => 
 }
 
 /** Arena: tierra batida con un anillo de losas, el blasón central y las marcas de salida de cada bando. */
-function floorTexture() {
-  const S = 1024, R = COLISEUM.floor + 0.3, k = S / (2 * R);
+function floorTexture(theme: Theme) {
+  const S = 1024, R = C.floor + 0.3, k = S / (2 * R);
   return canvasTex(S, S, (g) => {
     const cx = S / 2, cy = S / 2;
     g.fillStyle = '#9a917f'; g.fillRect(0, 0, S, S);
@@ -107,7 +134,7 @@ function floorTexture() {
       g.beginPath(); g.arc(cx + x * k, cy, 1.45 * k, 0, TAU); g.stroke();
       g.globalAlpha = 1;
     };
-    mark(2.7, '#2f64c9'); mark(-2.7, '#c23a2e');
+    mark(2.7, hexStr(theme.a)); mark(-2.7, hexStr(theme.b));
   });
 }
 
@@ -164,186 +191,241 @@ function signTexture() {
 
 // ---------------------------------------------------------------- piezas
 
-const mats = {
-  stone: () => toonMaterial(0xc2b59c, { rim: 0.05, ...opt }),
-  stoneDark: () => toonMaterial(0x8f8474, { rim: 0.04, ...opt }),
-  wood: () => toonMaterial(0xa0703f, { rim: 0.04, ...opt }),
-  woodDark: () => toonMaterial(0x6b4526, { rim: 0.03, ...opt }),
-  iron: () => toonMaterial(0x35322f, { rim: 0.05, ...opt }),
-};
+/**
+ * Los materiales de una paleta, construidos una vez y compartidos por todas las sedes que la usan (las
+ * nueve tienen la suya, pero el patrón evita duplicarlos si dos coincidieran).
+ */
+interface Mats { stone: THREE.MeshToonMaterial; stoneDark: THREE.MeshToonMaterial; wood: THREE.MeshToonMaterial; woodDark: THREE.MeshToonMaterial; iron: THREE.MeshToonMaterial; floor: THREE.MeshToonMaterial; roofA: THREE.MeshToonMaterial; roofB: THREE.MeshToonMaterial; awning: THREE.MeshToonMaterial }
+const matCache = new Map<string, Mats>();
+function matsFor(theme: Theme): Mats {
+  const key = `${theme.stone}-${theme.wood}-${theme.a}-${theme.b}`;
+  const hit = matCache.get(key);
+  if (hit) return hit;
+  const m: Mats = {
+    stone: toonMaterial(theme.stone, { rim: 0.05, ...opt }),
+    stoneDark: toonMaterial(shade(theme.stone, 0.74), { rim: 0.04, ...opt }),
+    wood: toonMaterial(theme.wood, { rim: 0.04, ...opt }),
+    woodDark: toonMaterial(shade(theme.wood, 0.66), { rim: 0.03, ...opt }),
+    iron: toonMaterial(0x35322f, { rim: 0.05, ...opt }),
+    floor: toonMaterial(0xffffff, { rim: 0, map: floorTexture(theme), ...opt }),
+    roofA: toonMaterial(theme.a, { rim: 0.06, ...opt }),
+    roofB: toonMaterial(theme.b, { rim: 0.06, ...opt }),
+    awning: toonMaterial(0xffffff, { rim: 0, map: stripeTexture(hexStr(theme.a), hexStr(theme.b), 6), ...opt }),
+  };
+  for (const k of ['stone', 'stoneDark', 'wood', 'woodDark'] as const) m[k].side = THREE.DoubleSide;
+  matCache.set(key, m);
+  return m;
+}
 
-interface Tower { x: number; z: number; r: number; h: number; roof: number }
+interface Tower { x: number; z: number; r: number; h: number; side: 'a' | 'b' }
 const TOWERS: Tower[] = [
   // Ninguna torre en el cuadrante sureste: por ahí pasan los planos aéreos de la presentación del combate.
   ...[Math.PI / 4, (3 * Math.PI) / 4, (-3 * Math.PI) / 4].map((a) => ({
-    x: Math.cos(a) * (COLISEUM.wall + 0.45), z: Math.sin(a) * (COLISEUM.wall + 0.45), r: 1.75, h: 6.3, roof: Math.cos(a) > 0 ? BLUE : RED,
+    x: Math.cos(a) * (C.wall + 0.45), z: Math.sin(a) * (C.wall + 0.45), r: 1.75, h: 6.3, side: (Math.cos(a) > 0 ? 'a' : 'b') as 'a' | 'b',
   })),
-  { x: -(COLISEUM.wall + 0.5), z: GATE_HALF + 1.8, r: 1.5, h: 6.9, roof: RED },
-  { x: -(COLISEUM.wall + 0.5), z: -GATE_HALF - 1.8, r: 1.5, h: 6.9, roof: RED },
+  { x: -(C.wall + 0.5), z: GH + 1.8, r: 1.5, h: 6.9, side: 'b' as const },
+  { x: -(C.wall + 0.5), z: -GH - 1.8, r: 1.5, h: 6.9, side: 'b' as const },
 ];
 
 /** Una llama o un brillo: posiciones en coordenadas locales del recinto o del mundo (world = true). */
 interface Fire { x: number; y: number; z: number; s: number }
 
-/** Muros, gradas, torres, portón: la mampostería estática del recinto (coordenadas locales). */
-const Masonry: React.FC = () => {
+/**
+ * Muros, gradas, torres, portón: la mampostería estática del recinto, en coordenadas locales (el portón
+ * siempre al oeste; cada sede gira el grupo entero). La geometría se construye una vez y se comparte.
+ */
+interface Geos {
+  stone: THREE.BufferGeometry; dark: THREE.BufferGeometry; wood: THREE.BufferGeometry; woodDark: THREE.BufferGeometry;
+  iron: THREE.BufferGeometry; roofA: THREE.BufferGeometry; roofB: THREE.BufferGeometry;
+  floor: THREE.BufferGeometry; awning: THREE.BufferGeometry; awningAt: [number, number, number];
+}
+let geoCache: Geos | null = null;
+
+function coliseumGeos(): Geos {
+  if (geoCache) return geoCache;
+  const W = C.wall, T = C.wallT;
+  const stoneParts: THREE.BufferGeometry[] = [
+    wallRing(W, W + T, G, WALL_H, gapAt(W + T / 2, GH + 0.5)),
+    wallRing(C.barrier - 0.4, C.barrier, G, BARRIER_H, gapAt(C.barrier, GH + 0.15)),
+    // muros del pasillo de la puerta, de la barrera a la muralla
+    new THREE.BoxGeometry(W - C.barrier + 0.6, 2.9, 0.45).translate(-(W + C.barrier) / 2, G + 1.45, GH + 0.25),
+    new THREE.BoxGeometry(W - C.barrier + 0.6, 2.9, 0.45).translate(-(W + C.barrier) / 2, G + 1.45, -GH - 0.25),
+  ];
+  const darkParts: THREE.BufferGeometry[] = [
+    wallRing(W + T - 0.05, W + T + 0.3, G, 0.8, gapAt(W + T, GH + 0.5)),
+    new THREE.CylinderGeometry(C.floor + 0.3, C.floor + 0.3, 0.3, 64, 1, true).translate(0, -0.15, 0),
+  ];
+  const woodParts: THREE.BufferGeometry[] = [
+    wallRing(C.barrier - 0.46, C.barrier + 0.06, BARRIER_H, BARRIER_H + 0.12, gapAt(C.barrier, GH + 0.15)),
+  ];
+  const woodDarkParts: THREE.BufferGeometry[] = [];
+  // gradas: huella clara + contrahuella oscura por fila; la última llega hasta la muralla
+  for (let i = 0; i < ROWS; i++) {
+    const r = rowR(i), y = rowY(i), gap = gapAt(r, GH + 0.45);
+    const d = i === ROWS - 1 ? W - r : ROW_D;
+    const phi0 = -Math.PI / 2 + gap, len = TAU - 2 * gap;
+    const y0 = i === 0 ? G : rowY(i - 1);
+    woodDarkParts.push(new THREE.CylinderGeometry(r, r, y - y0, 96, 1, true, phi0, len).translate(0, (y + y0) / 2, 0));
+    woodParts.push(new THREE.RingGeometry(r, r + d, 96, 1, Math.PI + gap, len).rotateX(-Math.PI / 2).translate(0, y, 0));
+  }
+
+  // torres: cuerpo, cornisa, tejado cónico (agrupado por bando) y una saetera mirando afuera
+  const roofParts: Record<'a' | 'b', THREE.BufferGeometry[]> = { a: [], b: [] };
+  const ironParts: THREE.BufferGeometry[] = [];
+  for (const t of TOWERS) {
+    stoneParts.push(new THREE.CylinderGeometry(t.r, t.r * 1.07, t.h - G, 18).translate(t.x, (t.h + G) / 2, t.z));
+    darkParts.push(new THREE.CylinderGeometry(t.r + 0.28, t.r, 0.45, 18).translate(t.x, t.h + 0.2, t.z));
+    roofParts[t.side].push(new THREE.ConeGeometry(t.r + 0.45, 2.5, 18).translate(t.x, t.h + 0.42 + 1.25, t.z));
+    const a = Math.atan2(t.z, t.x);
+    for (const y of [t.h * 0.45, t.h * 0.75]) {
+      ironParts.push(new THREE.BoxGeometry(0.16, 0.75, 0.16).translate(t.x + Math.cos(a) * t.r, y, t.z + Math.sin(a) * t.r));
+    }
+  }
+
+  // portón: muro con arco de medio punto, extruido a lo largo del eje x
+  const shape = new THREE.Shape();
+  const hw = 3.3, ah = 2.5, ar = GH, top = 5.2;
+  shape.moveTo(-hw, 0); shape.lineTo(-ar, 0); shape.lineTo(-ar, ah);
+  shape.absarc(0, ah, ar, Math.PI, 0, true);
+  shape.lineTo(ar, 0); shape.lineTo(hw, 0); shape.lineTo(hw, top); shape.lineTo(-hw, top); shape.closePath();
+  const gate = new THREE.ExtrudeGeometry(shape, { depth: 1.7, bevelEnabled: false, curveSegments: 14 });
+  gate.translate(0, 0, -0.85).rotateY(Math.PI / 2).translate(-(W + T / 2), G, 0);
+  stoneParts.push(gate);
+  // rastrillo levantado, asomando bajo la clave del arco
+  for (let i = -3; i <= 3; i++) ironParts.push(new THREE.BoxGeometry(0.09, 0.7, 0.09).translate(-(W + T / 2), G + ah + ar - 0.45, i * 0.42));
+  ironParts.push(new THREE.BoxGeometry(0.1, 0.1, 2.9).translate(-(W + T / 2), G + ah + ar - 0.8, 0));
+
+  // palco de honor al norte (+z), el fondo de los planos de combate
+  const boxR = rowR(ROWS - 1) + 0.2, boxY = rowY(ROWS - 1);
+  for (const sx of [-1.8, 1.8]) for (const dz of [0, 1.2]) woodDarkParts.push(new THREE.BoxGeometry(0.16, 2.1, 0.16).translate(sx, boxY + 1.05, boxR + dz));
+
+  // puertas abiertas hacia fuera
+  const doorGeo = (sz: number) => {
+    const half = GH / 2, dx = -0.94 * half, dz = -0.34 * sz * half;
+    return new THREE.BoxGeometry(GH, 2.9, 0.12).rotateY(sz * 2.79).translate(-(W + T + 0.05) + dx, G + 1.45, sz * GH + dz);
+  };
+  woodDarkParts.push(doorGeo(1), doorGeo(-1));
+
+  const unify = (list: THREE.BufferGeometry[]) => mergeGeometries(list.map((g) => (g.index ? g.toNonIndexed() : g)))!;
+  geoCache = {
+    stone: unify(stoneParts), dark: unify(darkParts), wood: unify(woodParts), woodDark: unify(woodDarkParts),
+    iron: unify(ironParts), roofA: unify(roofParts.a), roofB: unify(roofParts.b),
+    floor: new THREE.CircleGeometry(C.floor + 0.3, 72).rotateX(-Math.PI / 2),
+    awning: new THREE.BoxGeometry(4.1, 0.1, 1.9), awningAt: [0, boxY + 2.15, boxR + 0.6],
+  };
+  return geoCache;
+}
+
+const Masonry: React.FC<{ theme: Theme }> = ({ theme }) => {
   const built = useMemo(() => {
-    const m = { stone: mats.stone(), stoneDark: mats.stoneDark(), wood: mats.wood(), woodDark: mats.woodDark(), iron: mats.iron() };
-    for (const k of ['stone', 'stoneDark', 'wood', 'woodDark'] as const) m[k].side = THREE.DoubleSide;
-
-    const floorMat = toonMaterial(0xffffff, { rim: 0, map: floorTexture(), ...opt });
-
-    const W = COLISEUM.wall, T = COLISEUM.wallT;
-    const stoneParts: THREE.BufferGeometry[] = [
-      wallRing(W, W + T, G, WALL_H, gapAt(W + T / 2, GATE_HALF + 0.5)),
-      wallRing(COLISEUM.barrier - 0.4, COLISEUM.barrier, G, BARRIER_H, gapAt(COLISEUM.barrier, GATE_HALF + 0.15)),
-      // muros del pasillo de la puerta, de la barrera a la muralla
-      new THREE.BoxGeometry(W - COLISEUM.barrier + 0.6, 2.9, 0.45).translate(-(W + COLISEUM.barrier) / 2, G + 1.45, GATE_HALF + 0.25),
-      new THREE.BoxGeometry(W - COLISEUM.barrier + 0.6, 2.9, 0.45).translate(-(W + COLISEUM.barrier) / 2, G + 1.45, -GATE_HALF - 0.25),
-    ];
-    const darkParts: THREE.BufferGeometry[] = [
-      wallRing(W + T - 0.05, W + T + 0.3, G, 0.8, gapAt(W + T, GATE_HALF + 0.5)),
-      new THREE.CylinderGeometry(COLISEUM.floor + 0.3, COLISEUM.floor + 0.3, 0.3, 64, 1, true).translate(0, -0.15, 0),
-    ];
-    const woodParts: THREE.BufferGeometry[] = [
-      wallRing(COLISEUM.barrier - 0.46, COLISEUM.barrier + 0.06, BARRIER_H, BARRIER_H + 0.12, gapAt(COLISEUM.barrier, GATE_HALF + 0.15)),
-    ];
-    const woodDarkParts: THREE.BufferGeometry[] = [];
-    // gradas: huella clara + contrahuella oscura por fila; la última llega hasta la muralla
-    for (let i = 0; i < ROWS; i++) {
-      const r = rowR(i), y = rowY(i), gap = gapAt(r, GATE_HALF + 0.45);
-      const d = i === ROWS - 1 ? W - r : ROW_D;
-      const phi0 = -Math.PI / 2 + gap, len = TAU - 2 * gap;
-      const y0 = i === 0 ? G : rowY(i - 1);
-      woodDarkParts.push(new THREE.CylinderGeometry(r, r, y - y0, 96, 1, true, phi0, len).translate(0, (y + y0) / 2, 0));
-      woodParts.push(new THREE.RingGeometry(r, r + d, 96, 1, Math.PI + gap, len).rotateX(-Math.PI / 2).translate(0, y, 0));
-    }
-
-    // torres: cuerpo, cornisa, tejado cónico y una saetera mirando afuera
-    const roofs: { geo: THREE.BufferGeometry; color: number }[] = [];
-    const ironParts: THREE.BufferGeometry[] = [];
-    for (const t of TOWERS) {
-      stoneParts.push(new THREE.CylinderGeometry(t.r, t.r * 1.07, t.h - G, 18).translate(t.x, (t.h + G) / 2, t.z));
-      darkParts.push(new THREE.CylinderGeometry(t.r + 0.28, t.r, 0.45, 18).translate(t.x, t.h + 0.2, t.z));
-      roofs.push({ geo: new THREE.ConeGeometry(t.r + 0.45, 2.5, 18).translate(t.x, t.h + 0.42 + 1.25, t.z), color: t.roof });
-      const a = Math.atan2(t.z, t.x);
-      for (const y of [t.h * 0.45, t.h * 0.75]) {
-        ironParts.push(new THREE.BoxGeometry(0.16, 0.75, 0.16).translate(t.x + Math.cos(a) * t.r, y, t.z + Math.sin(a) * t.r));
-      }
-    }
-
-    // portón: muro con arco de medio punto, extruido a lo largo del eje x
-    const shape = new THREE.Shape();
-    const hw = 3.3, ah = 2.5, ar = GATE_HALF, top = 5.2;
-    shape.moveTo(-hw, 0); shape.lineTo(-ar, 0); shape.lineTo(-ar, ah);
-    shape.absarc(0, ah, ar, Math.PI, 0, true);
-    shape.lineTo(ar, 0); shape.lineTo(hw, 0); shape.lineTo(hw, top); shape.lineTo(-hw, top); shape.closePath();
-    const gate = new THREE.ExtrudeGeometry(shape, { depth: 1.7, bevelEnabled: false, curveSegments: 14 });
-    gate.translate(0, 0, -0.85).rotateY(Math.PI / 2).translate(-(W + T / 2), G, 0);
-    stoneParts.push(gate);
-    // rastrillo levantado, asomando bajo la clave del arco
-    for (let i = -3; i <= 3; i++) ironParts.push(new THREE.BoxGeometry(0.09, 0.7, 0.09).translate(-(W + T / 2), G + ah + ar - 0.45, i * 0.42));
-    ironParts.push(new THREE.BoxGeometry(0.1, 0.1, 2.9).translate(-(W + T / 2), G + ah + ar - 0.8, 0));
-
-    // palco de honor al norte (+z), el fondo de los planos de combate
-    const boxR = rowR(ROWS - 1) + 0.2, boxY = rowY(ROWS - 1);
-    for (const sx of [-1.8, 1.8]) for (const dz of [0, 1.2]) woodDarkParts.push(new THREE.BoxGeometry(0.16, 2.1, 0.16).translate(sx, boxY + 1.05, boxR + dz));
-
-    // puertas abiertas hacia fuera
-    const doorGeo = (sz: number) => {
-      const half = GATE_HALF / 2, dx = -0.94 * half, dz = -0.34 * sz * half;
-      return new THREE.BoxGeometry(GATE_HALF, 2.9, 0.12).rotateY(sz * 2.79).translate(-(W + T + 0.05) + dx, G + 1.45, sz * GATE_HALF + dz);
-    };
-    woodDarkParts.push(doorGeo(1), doorGeo(-1));
-
-    const unify = (list: THREE.BufferGeometry[]) => mergeGeometries(list.map((g) => (g.index ? g.toNonIndexed() : g)))!;
+    const g = coliseumGeos(), m = matsFor(theme);
     const meshes: THREE.Mesh[] = [];
     const add = (geo: THREE.BufferGeometry, mat: THREE.Material, shadow = true) => {
       const me = new THREE.Mesh(geo, mat); me.castShadow = shadow; me.receiveShadow = true; meshes.push(me);
     };
-    add(unify(stoneParts), m.stone);
-    add(unify(darkParts), m.stoneDark);
-    add(unify(woodParts), m.wood);
-    add(unify(woodDarkParts), m.woodDark);
-    add(unify(ironParts), m.iron, false);
-    for (const r of roofs) add(r.geo, toonMaterial(r.color, { rim: 0.06, ...opt }));
-    const floor = new THREE.Mesh(new THREE.CircleGeometry(COLISEUM.floor + 0.3, 72).rotateX(-Math.PI / 2), floorMat);
-    floor.receiveShadow = true; meshes.push(floor);
-
-    // toldo del palco, a franjas azules y rojas
-    const awn = new THREE.Mesh(new THREE.BoxGeometry(4.1, 0.1, 1.9), toonMaterial(0xffffff, { rim: 0, map: stripeTexture('#2f64c9', '#c23a2e', 6), ...opt }));
-    awn.position.set(0, boxY + 2.15, boxR + 0.6); awn.rotation.x = -0.12; awn.castShadow = true; meshes.push(awn);
+    add(g.stone, m.stone); add(g.dark, m.stoneDark); add(g.wood, m.wood); add(g.woodDark, m.woodDark);
+    add(g.iron, m.iron, false);
+    add(g.roofA, m.roofA); add(g.roofB, m.roofB);
+    const floor = new THREE.Mesh(g.floor, m.floor); floor.receiveShadow = true; meshes.push(floor);
+    // toldo del palco, a franjas de los dos bandos
+    const awn = new THREE.Mesh(g.awning, m.awning);
+    awn.position.set(...g.awningAt); awn.rotation.x = -0.12; awn.castShadow = true; meshes.push(awn);
     return meshes;
-  }, []);
-  useEffect(() => () => built.forEach((m) => m.geometry.dispose()), [built]);
+  }, [theme]);
   return <>{built.map((m, i) => <primitive key={i} object={m} />)}</>;
 };
 
-/** Almenas de muralla, torres y portón en un solo InstancedMesh. */
-const Merlons: React.FC = () => {
+/** Almenas de muralla, torres y portón en un solo InstancedMesh. Las posiciones se calculan una vez. */
+interface Spot { x: number; y: number; z: number; ry: number }
+let merlonSpots: Spot[] | null = null;
+function merlonLayout(): Spot[] {
+  if (merlonSpots) return merlonSpots;
+  const spots: Spot[] = [];
+  const W = C.wall, T = C.wallT, rr = W + T - 0.2;
+  const n = Math.floor((TAU * rr) / 1.15);
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * TAU;
+    if (fromGate(a) < gapAt(rr, GH + 2.6)) continue;
+    const x = Math.cos(a) * rr, z = Math.sin(a) * rr;
+    if (TOWERS.some((t) => Math.hypot(t.x - x, t.z - z) < t.r + 0.5)) continue;
+    spots.push({ x, y: WALL_H + 0.3, z, ry: -a - Math.PI / 2 });
+  }
+  for (const t of TOWERS) {
+    for (let i = 0; i < 9; i++) {
+      const a = (i / 9) * TAU;
+      spots.push({ x: t.x + Math.cos(a) * (t.r + 0.1), y: t.h + 0.72, z: t.z + Math.sin(a) * (t.r + 0.1), ry: -a - Math.PI / 2 });
+    }
+  }
+  for (let i = -2; i <= 2; i++) spots.push({ x: -(W + T / 2) - 0.55, y: G + 5.2 + 0.31, z: i * 1.25, ry: Math.PI / 2 });
+  merlonSpots = spots;
+  return spots;
+}
+let merlonGeo: THREE.BoxGeometry | null = null;
+
+const Merlons: React.FC<{ theme: Theme }> = ({ theme }) => {
   const mesh = useMemo(() => {
-    const spots: { x: number; y: number; z: number; ry: number }[] = [];
-    const W = COLISEUM.wall, T = COLISEUM.wallT, rr = W + T - 0.2;
-    const n = Math.floor((TAU * rr) / 1.15);
-    for (let i = 0; i < n; i++) {
-      const a = (i / n) * TAU;
-      if (fromGate(a) < gapAt(rr, GATE_HALF + 2.6)) continue;
-      const x = Math.cos(a) * rr, z = Math.sin(a) * rr;
-      if (TOWERS.some((t) => Math.hypot(t.x - x, t.z - z) < t.r + 0.5)) continue;
-      spots.push({ x, y: WALL_H + 0.3, z, ry: -a - Math.PI / 2 });
-    }
-    for (const t of TOWERS) {
-      for (let i = 0; i < 9; i++) {
-        const a = (i / 9) * TAU;
-        spots.push({ x: t.x + Math.cos(a) * (t.r + 0.1), y: t.h + 0.72, z: t.z + Math.sin(a) * (t.r + 0.1), ry: -a - Math.PI / 2 });
-      }
-    }
-    for (let i = -2; i <= 2; i++) spots.push({ x: -(W + T / 2) - 0.55, y: G + 5.2 + 0.31, z: i * 1.25, ry: Math.PI / 2 });
-    const im = new THREE.InstancedMesh(new THREE.BoxGeometry(0.62, 0.62, 0.36), mats.stone(), spots.length);
+    const spots = merlonLayout();
+    merlonGeo ??= new THREE.BoxGeometry(0.62, 0.62, 0.36);
+    const im = new THREE.InstancedMesh(merlonGeo, matsFor(theme).stone, spots.length);
     const o = new THREE.Object3D();
     spots.forEach((s, i) => { o.position.set(s.x, s.y, s.z); o.rotation.set(0, s.ry, 0); o.updateMatrix(); im.setMatrixAt(i, o.matrix); });
     im.castShadow = true; im.receiveShadow = true;
     return im;
-  }, []);
+  }, [theme]);
   return <primitive object={mesh} />;
 };
 
 /** Estandartes colgados: fuera de la muralla, dentro sobre las gradas y en la barrera detrás de cada bando. */
-const Banners: React.FC = () => {
+interface BannerSpot { a: number; r: number; y: number; w: number; h: number; out: boolean; side: 'a' | 'b' }
+let bannerSpots: BannerSpot[] | null = null;
+function bannerLayout(): BannerSpot[] {
+  if (bannerSpots) return bannerSpots;
+  const list: BannerSpot[] = [];
+  const W = C.wall, T = C.wallT;
+  const side = (a: number): 'a' | 'b' => (Math.cos(a) >= 0 ? 'a' : 'b');
+  for (let i = 0; i < 16; i++) {
+    const a = (i / 16) * TAU + TAU / 32;
+    if (fromGate(a) < 0.4 || TOWERS.some((t) => Math.abs(Math.atan2(Math.sin(a - Math.atan2(t.z, t.x)), Math.cos(a - Math.atan2(t.z, t.x)))) < 0.17)) continue;
+    list.push({ a, r: W + T + 0.04, y: WALL_H - 0.1, w: 1.05, h: 2.4, out: true, side: side(a) });
+  }
+  for (let i = 0; i < 22; i++) {
+    const a = (i / 22) * TAU;
+    if (fromGate(a) < 0.45 || Math.abs(a - Math.PI / 2) < 0.2) continue;
+    list.push({ a, r: W - 0.04, y: WALL_H - 0.05, w: 0.85, h: 1.35, out: false, side: side(a) });
+  }
+  for (const a of [-0.62, -0.21, 0.21, 0.62]) list.push({ a, r: C.barrier - 0.44, y: BARRIER_H, w: 0.78, h: 1.05, out: false, side: 'a' });
+  for (const a of [Math.PI - 0.5, Math.PI - 0.9, Math.PI + 0.5, Math.PI + 0.9]) list.push({ a, r: C.barrier - 0.44, y: BARRIER_H, w: 0.78, h: 1.05, out: false, side: 'b' });
+  bannerSpots = list;
+  return list;
+}
+let bannerGeo: THREE.PlaneGeometry | null = null;
+let bannerMat: THREE.MeshToonMaterial | null = null;
+
+const Banners: React.FC<{ theme: Theme }> = ({ theme }) => {
   const mesh = useMemo(() => {
-    const list: { a: number; r: number; y: number; w: number; h: number; out: boolean; c: number }[] = [];
-    const W = COLISEUM.wall, T = COLISEUM.wallT;
-    const side = (a: number) => (Math.cos(a) >= 0 ? BLUE : RED);
-    for (let i = 0; i < 16; i++) {
-      const a = (i / 16) * TAU + TAU / 32;
-      if (fromGate(a) < 0.4 || TOWERS.some((t) => Math.abs(Math.atan2(Math.sin(a - Math.atan2(t.z, t.x)), Math.cos(a - Math.atan2(t.z, t.x)))) < 0.17)) continue;
-      list.push({ a, r: W + T + 0.04, y: WALL_H - 0.1, w: 1.05, h: 2.4, out: true, c: side(a) });
+    const list = bannerLayout();
+    bannerGeo ??= new THREE.PlaneGeometry(1, 1).translate(0, -0.5, 0) as THREE.PlaneGeometry;
+    if (!bannerMat) {
+      bannerMat = toonMaterial(0xffffff, { rim: 0.04, map: bannerTexture(), alphaTest: 0.5, ...opt });
+      bannerMat.side = THREE.DoubleSide;
     }
-    for (let i = 0; i < 22; i++) {
-      const a = (i / 22) * TAU;
-      if (fromGate(a) < 0.45 || Math.abs(a - Math.PI / 2) < 0.2) continue;
-      list.push({ a, r: W - 0.04, y: WALL_H - 0.05, w: 0.85, h: 1.35, out: false, c: side(a) });
-    }
-    for (const a of [-0.62, -0.21, 0.21, 0.62]) list.push({ a, r: COLISEUM.barrier - 0.44, y: BARRIER_H, w: 0.78, h: 1.05, out: false, c: BLUE });
-    for (const a of [Math.PI - 0.5, Math.PI - 0.9, Math.PI + 0.5, Math.PI + 0.9]) list.push({ a, r: COLISEUM.barrier - 0.44, y: BARRIER_H, w: 0.78, h: 1.05, out: false, c: RED });
-    const geo = new THREE.PlaneGeometry(1, 1).translate(0, -0.5, 0);
-    const mat = toonMaterial(0xffffff, { rim: 0.04, map: bannerTexture(), alphaTest: 0.5, ...opt });
-    mat.side = THREE.DoubleSide;
-    const im = new THREE.InstancedMesh(geo, mat, list.length);
+    const im = new THREE.InstancedMesh(bannerGeo, bannerMat, list.length);
     const o = new THREE.Object3D(), col = new THREE.Color();
     list.forEach((b, i) => {
       o.position.set(Math.cos(b.a) * b.r, b.y, Math.sin(b.a) * b.r);
       o.rotation.set(0, b.out ? Math.PI / 2 - b.a : -Math.PI / 2 - b.a, 0);
       o.scale.set(b.w, b.h, 1); o.updateMatrix();
-      im.setMatrixAt(i, o.matrix); im.setColorAt(i, col.setHex(b.c));
+      im.setMatrixAt(i, o.matrix); im.setColorAt(i, col.setHex(b.side === 'a' ? theme.a : theme.b));
     });
     im.castShadow = true;
     return im;
-  }, []);
+  }, [theme]);
   return <primitive object={mesh} />;
 };
 
-/** Bandera ondeando en un mástil (torres y entrada). */
+/** Bandera ondeando en un mástil (torres y entrada). El mástil y el remate son iguales en todas las sedes. */
+let poleMat: THREE.MeshToonMaterial | null = null;
+let tipMat: THREE.MeshToonMaterial | null = null;
 const Pennant: React.FC<{ x: number; y: number; z: number; color: number; phase: number; size?: number }> = ({ x, y, z, color, phase, size = 1 }) => {
   const flag = useRef<THREE.Mesh>(null);
   const m = useMemo(() => {
@@ -351,7 +433,9 @@ const Pennant: React.FC<{ x: number; y: number; z: number; color: number; phase:
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.Float32BufferAttribute([0, 0.35, 0, 1.3, 0, 0, 0, -0.35, 0], 3));
     geo.computeVertexNormals();
-    return { cloth, geo, pole: mats.woodDark(), tip: toonMaterial(GOLD, { rim: 0.2, emissive: 0x4a3600, ...opt }) };
+    poleMat ??= toonMaterial(0x6b4526, { rim: 0.03, ...opt });
+    tipMat ??= toonMaterial(GOLD, { rim: 0.2, emissive: 0x4a3600, ...opt });
+    return { cloth, geo, pole: poleMat, tip: tipMat };
   }, [color]);
   useFrame(({ clock }) => {
     const f = flag.current; if (!f) return;
@@ -371,7 +455,7 @@ const Pennant: React.FC<{ x: number; y: number; z: number; color: number; phase:
 // ---------------------------------------------------------------- fuego
 
 /** Todas las llamas del recinto y del camino: dos InstancedMesh (llama y núcleo) + un Points de brillo. */
-const Fires: React.FC<{ fires: Fire[] }> = ({ fires }) => {
+const Fires: React.FC<{ fires: Fire[]; light?: [number, number, number] }> = ({ fires, light: lightAt }) => {
   const light = useRef<THREE.PointLight>(null);
   const built = useMemo(() => {
     const N = fires.length;
@@ -414,7 +498,9 @@ const Fires: React.FC<{ fires: Fire[] }> = ({ fires }) => {
       <primitive object={built.outer} />
       <primitive object={built.inner} />
       <primitive object={built.glow} />
-      <pointLight ref={light} position={[ARENA.x, arenaY() + 5.5, ARENA.z]} distance={30} decay={1.3} color={0xffae5c} intensity={2} />
+      {/* Una sola luz de punto, la de la sede principal: nueve antorchas con luz real serían nueve luces
+          dinámicas sobre cada material del mundo, y el coste de eso no lo paga lo que se ve. */}
+      {lightAt && <pointLight ref={light} position={lightAt} distance={30} decay={1.3} color={0xffae5c} intensity={2} />}
     </>
   );
 };
@@ -449,12 +535,12 @@ const Crowd: React.FC = () => {
     const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
     for (let i = 0; i < ROWS; i++) {
       const r = rowR(i) + 0.42;
-      const n = Math.floor((TAU * r) / 0.6);
+      const n = Math.floor((TAU * r * S) / 0.6);
       for (let j = 0; j < n; j++) {
         const a = (j / n) * TAU + (i % 2) * 0.02;
-        if (fromGate(a) < gapAt(r, GATE_HALF + 0.9) || j % 16 === 0 || rnd() < 0.1) continue;
+        if (fromGate(a) < gapAt(r, GH + 0.9) || j % 16 === 0 || rnd() < 0.1) continue;
         if (i === ROWS - 1 && Math.abs(a - Math.PI / 2) < 0.2) continue; // palco
-        seats.push({ x: Math.cos(a) * r, y: rowY(i), z: Math.sin(a) * r, a });
+        seats.push({ x: Math.cos(a) * r * S, y: rowY(i) * S, z: Math.sin(a) * r * S, a });
       }
     }
     const N = seats.length;
@@ -525,7 +611,7 @@ function roadLayout(): RoadProp[] {
 const Approach: React.FC = () => {
   const group = useMemo(() => {
     const root = new THREE.Group();
-    const wood = mats.wood(), woodDark = mats.woodDark(), iron = mats.iron();
+    const { wood, woodDark, iron } = matsFor(ARENA.theme);
     const signMat = toonMaterial(0xffffff, { rim: 0, map: signTexture(), ...opt });
     const box = (w: number, h: number, d: number, m: THREE.Material, x: number, y: number, z: number, parent: THREE.Object3D) => {
       const me = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); me.position.set(x, y, z); me.castShadow = true; parent.add(me); return me;
@@ -579,44 +665,76 @@ const Approach: React.FC = () => {
 /** Braseros sobre la barrera y antorchas en la fachada del portón (coordenadas locales). */
 function localFires(): Fire[] {
   const out: Fire[] = [];
-  const rb = COLISEUM.barrier - 0.2;
+  const rb = C.barrier - 0.2;
   for (const a of [0.42, 1.12, 2.02, 2.72, -0.4, -1.1, -2.05, -2.7]) out.push({ x: Math.cos(a) * rb, y: BARRIER_H + 0.42, z: Math.sin(a) * rb, s: 1 });
-  const gx = -(COLISEUM.wall + COLISEUM.wallT + 0.1);
-  for (const z of [GATE_HALF + 0.7, -GATE_HALF - 0.7]) out.push({ x: gx, y: G + 3.2, z, s: 0.8 });
+  const gx = -(C.wall + C.wallT + 0.1);
+  for (const z of [GH + 0.7, -GH - 0.7]) out.push({ x: gx, y: G + 3.2, z, s: 0.8 });
   return out;
 }
 
-export const Colosseum: React.FC = () => {
-  const y = arenaY();
-  const braziers = useMemo(() => {
-    const iron = mats.iron();
-    const g = new THREE.Group();
-    for (const f of localFires()) {
-      const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.3 * f.s, 0.14 * f.s, 0.3 * f.s, 10), iron);
-      bowl.position.set(f.x, f.y - 0.12, f.z); g.add(bowl);
-      if (f.y < 2) { const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.08, 0.3, 6), iron); leg.position.set(f.x, f.y - 0.4, f.z); g.add(leg); }
-    }
-    return g;
-  }, []);
-  const allFires = useMemo(() => [
-    ...localFires().map((f) => ({ ...f, x: f.x + ARENA.x, y: f.y + y, z: f.z + ARENA.z })),
-    ...roadLayout().filter((p) => p.kind === 'torch').map((p) => ({ x: p.x, y: heightAt(p.x, p.z) + 2.38, z: p.z, s: 0.75 })),
-  ], [y]);
-  const W = COLISEUM.wall + COLISEUM.wallT;
+/** Los braseros de hierro bajo las llamas (coordenadas locales, iguales en todas las sedes). */
+let brazierGroup: THREE.Group | null = null;
+function braziers(): THREE.Group {
+  if (brazierGroup) return brazierGroup;
+  const iron = matsFor(ARENA.theme).iron;
+  const g = new THREE.Group();
+  for (const f of localFires()) {
+    const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.3 * f.s, 0.14 * f.s, 0.3 * f.s, 10), iron);
+    bowl.position.set(f.x, f.y - 0.12, f.z); g.add(bowl);
+    if (f.y < 2) { const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.08, 0.3, 6), iron); leg.position.set(f.x, f.y - 0.4, f.z); g.add(leg); }
+  }
+  brazierGroup = g;
+  return g;
+}
+
+/**
+ * Una sede: el recinto entero, girado y puesto a su cota. El público y el camino de llegada son solo de
+ * la principal — en las demás, las gradas vacías son parte de lo que se va a buscar.
+ */
+const Coliseum: React.FC<{ site: ColiseumSite }> = ({ site }) => {
+  const y = arenaY(site);
+  const W = C.wall + C.wallT;
+  // Cada sede necesita su propio grupo de braseros (un Object3D no puede colgar de dos padres), pero la
+  // geometría y el material salen del mismo sitio.
+  const bowls = useMemo(() => braziers().clone(), []);
+  // Las llamas viven en coordenadas del mundo (no cuelgan del grupo escalado), así que aquí se pasan las
+  // posiciones locales por la escala a mano antes de girarlas a su sitio.
+  const fires = useMemo(() => {
+    const local = localFires().map((f) => {
+      const [wx, wz] = toWorld(site, f.x * S, f.z * S);
+      return { x: wx, y: f.y * S + y, z: wz, s: f.s * S };
+    });
+    if (!site.home) return local;
+    return [
+      ...local,
+      ...roadLayout().filter((p) => p.kind === 'torch').map((p) => ({ x: p.x, y: heightAt(p.x, p.z) + 2.38, z: p.z, s: 0.75 })),
+    ];
+  }, [site, y]);
   return (
     <group>
-      <group position={[ARENA.x, y, ARENA.z]}>
-        <Masonry />
-        <Merlons />
-        <Banners />
-        <primitive object={braziers} />
-        <Crowd />
-        {TOWERS.map((t, i) => <Pennant key={i} x={t.x} y={t.h + 2.55} z={t.z} color={t.roof} phase={i * 1.3} />)}
-        <Pennant x={-(W + 3.2)} y={G} z={3.6} color={BLUE} phase={0.4} size={3.2} />
-        <Pennant x={-(W + 3.2)} y={G} z={-3.6} color={RED} phase={2.1} size={3.2} />
+      <group position={[site.x, y, site.z]} rotation={[0, site.rot, 0]} scale={S}>
+        <Masonry theme={site.theme} />
+        <Merlons theme={site.theme} />
+        <Banners theme={site.theme} />
+        <primitive object={bowls} />
+        {/* El público va a escala 1 dentro del recinto escalado: las gradas son el doble de grandes, la
+            gente no. Por eso el grupo deshace la escala y sus asientos se calculan ya multiplicados. */}
+        {site.home && <group scale={1 / S}><Crowd /></group>}
+        {TOWERS.map((t, i) => (
+          <Pennant key={i} x={t.x} y={t.h + 2.55} z={t.z} color={t.side === 'a' ? site.theme.a : site.theme.b} phase={i * 1.3} />
+        ))}
+        <Pennant x={-(W + 3.2)} y={G} z={3.6} color={site.theme.a} phase={0.4} size={3.2} />
+        <Pennant x={-(W + 3.2)} y={G} z={-3.6} color={site.theme.b} phase={2.1} size={3.2} />
       </group>
-      <Approach />
-      <Fires fires={allFires} />
+      {site.home && <Approach />}
+      <Fires fires={fires} light={site.home ? [site.x, y + 5.5, site.z] : undefined} />
     </group>
   );
 };
+
+/** El circuito entero: las nueve sedes de la región. */
+export const Colosseum: React.FC = () => (
+  <group>
+    {COLISEUMS.map((site) => <Coliseum key={site.key} site={site} />)}
+  </group>
+);

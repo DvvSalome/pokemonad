@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { heightAt, placeAt, around, PLACES, PATCHES, inPatch, pathDist, WATER_Y, ell, dist, LAKE, POND, inLava, ARENA, COLISEUM } from './terrain';
+import { heightAt, placeAt, around, PLACES, PATCHES, inPatch, pathDist, WATER_Y, ell, dist, LAKE, POND, inLava, coliseumDist, COLISEUM } from './terrain';
 import { scatterClusters } from './scatter';
 import { SPECIES, BIOME_COVER, BETWEEN_COVER, COVER_TINTS, GRASS_LIFT, PATCH_GRASS } from './stylized';
 import type { Tint } from './instancing';
@@ -22,7 +22,7 @@ function coverFits(x: number, z: number): boolean {
   if (ell(x, z, LAKE) < 1.04) return false;
   if (dist(x, z, POND) < POND.r + 0.7) return false;
   if (inLava(x, z, 0.8)) return false;
-  if (dist(x, z, ARENA) < COLISEUM.wall + 2.5) return false;
+  if (coliseumDist(x, z) < COLISEUM.wall + 2.5) return false;
   return true;
 }
 

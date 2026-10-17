@@ -4,7 +4,7 @@ import { heightAt, coneY, naturalGroundColor } from './terrain';
 import { toonMaterial } from './toon';
 
 interface GroundProps {
-  /** Tamaño del lado de la malla, en metros. La región caminable real es un círculo de radio ~156. */
+  /** Tamaño del lado de la malla, en metros. La región caminable real es un círculo de radio WORLD_R. */
   size?: number;
   /** Segmentos por lado. Más = más detalle de altura/color, más costo de construcción única. */
   segments?: number;
@@ -15,7 +15,9 @@ interface GroundProps {
  * vértice (groundColor) por punto. Es la misma matemática que decide qué es caminable — el suelo que
  * ves y el suelo por el que puedes caminar nunca se desincronizan porque son la misma función.
  */
-export const Ground: React.FC<GroundProps> = ({ size = 400, segments = 220 }) => {
+// 560 m de lado y 290 segmentos: la malla tiene que cubrir la tierra firme, la playa y el fondo de mar
+// que la rodea (hasta radio ~266), y el paso entre vértices se mantiene en ~1.93 m, el detalle de antes.
+export const Ground: React.FC<GroundProps> = ({ size = 560, segments = 290 }) => {
   const geometry = useMemo(() => {
     const geo = new THREE.PlaneGeometry(size, size, segments, segments);
     geo.rotateX(-Math.PI / 2);

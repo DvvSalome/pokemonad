@@ -7,17 +7,20 @@
 // monstruo del jugador queda cerca y a la izquierda y el salvaje al fondo a la derecha — el encuadre de
 // siempre de la saga.
 import * as THREE from 'three';
-import { ARENA, arenaY } from './terrain';
+import { ARENA, arenaY, COLISEUM_SCALE } from './terrain';
 import type { BattleSide } from './battleStore';
 
 /** Lado del jugador sobre el eje X (+1 = este). Los planos de cámara se escriben relativos a él. */
 export const EAST = 1;
 
+// Las distancias crecen con la pista: en una arena del doble de radio, dos combatientes a 2.7 m del
+// centro se verían pegados en mitad de un descampado.
+const K = COLISEUM_SCALE;
 export const SPOT: Record<BattleSide | 'trainer', { x: number; z: number }> = {
-  player: { x: ARENA.x + 2.7 * EAST, z: ARENA.z },
-  foe: { x: ARENA.x - 2.7 * EAST, z: ARENA.z },
+  player: { x: ARENA.x + 2.7 * K * EAST, z: ARENA.z },
+  foe: { x: ARENA.x - 2.7 * K * EAST, z: ARENA.z },
   // En primer plano abajo a la izquierda del plano general: de espaldas, detrás de su monstruo.
-  trainer: { x: ARENA.x + 4.1 * EAST, z: ARENA.z - 0.3 },
+  trainer: { x: ARENA.x + 4.1 * K * EAST, z: ARENA.z - 0.3 * K },
 };
 
 /**

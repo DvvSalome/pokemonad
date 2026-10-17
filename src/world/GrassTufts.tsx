@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import * as THREE from 'three';
-import { scatterIn, heightAt, placeAt, pathDist, inLava, naturalGroundColor, WATER_Y, ARENA, COLISEUM } from './terrain';
+import { scatterIn, heightAt, placeAt, pathDist, inLava, naturalGroundColor, WATER_Y, coliseumDist, COLISEUM } from './terrain';
 import { n2, n3, smooth } from './noise';
 import { toonRampSoft } from './toon';
 import { PEDESTAL } from './TitleCamera';
@@ -131,7 +131,7 @@ export const GrassTufts: React.FC = () => {
       const h = heightAt(x, z);
       if (h < WATER_Y + 0.15 || Math.hypot(x, z * 0.95) > 152) return false;
       if (Math.hypot(x - PEDESTAL.x, z - PEDESTAL.z) < 2) return false;
-      if (Math.hypot(x - ARENA.x, z - ARENA.z) < COLISEUM.wall + 1.6) return false;
+      if (coliseumDist(x, z) < COLISEUM.wall + 1.6) return false;
       return pathDist(x, z) > 1.9 && !inLava(x, z, 0.6);
     }, (r) => 0.7 + r() * 0.9);
 

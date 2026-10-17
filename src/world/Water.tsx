@@ -1,7 +1,7 @@
 import React, { useMemo, useEffect } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
-import { LAKE, POND, WATER_Y, heightAt } from './terrain';
+import { LAKE, POND, WATER_Y, WORLD_R, heightAt } from './terrain';
 import { SKY, SUN, flatLight } from './lighting';
 import { atmoUniforms } from './atmo/fog';
 
@@ -145,9 +145,14 @@ export const Water: React.FC = () => {
     uNight: { value: 0 },
   }), []);
 
-  const [lake, pond] = useMemo(() => [
+  // El mar que rodea la isla usa el mismo material que el lago: misma espuma en la orilla, mismas ondas
+  // y el mismo color por profundidad, que es lo que hace que la costa se lea como agua de verdad y no
+  // como un plano azul. Su textura de profundidad cubre el mundo entero a ~3 m por téxel, de sobra para
+  // una orilla que se mira de lejos.
+  const [lake, pond, sea] = useMemo(() => [
     bakeDepth(LAKE.x - LAKE.rx, LAKE.z - LAKE.rz, LAKE.rx * 2, LAKE.rz * 2, 128),
     bakeDepth(POND.x - POND.r - 0.5, POND.z - POND.r - 0.5, POND.r * 2 + 1, POND.r * 2 + 1, 48, 3),
+    bakeDepth(-WORLD_R, -WORLD_R, WORLD_R * 2, WORLD_R * 2, 176),
   ], []);
 
   const makeMat = (b: Body) => new THREE.ShaderMaterial({
@@ -167,11 +172,12 @@ export const Water: React.FC = () => {
     depthWrite: false,
   });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const [lakeMat, pondMat] = useMemo(() => [makeMat(lake), makeMat(pond)], [lake, pond]);
+  const [lakeMat, pondMat, seaMat] = useMemo(() => [makeMat(lake), makeMat(pond), makeMat(sea)], [lake, pond, sea]);
 
   useEffect(() => () => {
-    lake.tex.dispose(); pond.tex.dispose(); lakeMat.dispose(); pondMat.dispose();
-  }, [lake, pond, lakeMat, pondMat]);
+    lake.tex.dispose(); pond.tex.dispose(); sea.tex.dispose();
+    lakeMat.dispose(); pondMat.dispose(); seaMat.dispose();
+  }, [lake, pond, sea, lakeMat, pondMat, seaMat]);
 
   useFrame(({ clock }) => {
     shared.uTime.value = clock.elapsedTime;
@@ -187,6 +193,11 @@ export const Water: React.FC = () => {
 
   return (
     <group>
+      {/* El mar se sale del borde de la malla de terreno a propósito: así llega hasta donde la niebla lo
+          funde con el cielo y el horizonte es mar, no el canto del mundo. */}
+      <mesh position={[0, WATER_Y, 0]} rotation={[-Math.PI / 2, 0, 0]} material={seaMat} renderOrder={-1}>
+        <planeGeometry args={[WORLD_R * 2.8, WORLD_R * 2.8, 48, 48]} />
+      </mesh>
       <mesh position={[LAKE.x, WATER_Y, LAKE.z]} rotation={[-Math.PI / 2, 0, 0]} material={lakeMat}>
         <planeGeometry args={[LAKE.rx * 2, LAKE.rz * 2, 24, 24]} />
       </mesh>
