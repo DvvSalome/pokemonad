@@ -6,7 +6,7 @@ import { tServer } from '../src/i18n';
 
 // El fallback apuntaba a un proyecto Supabase viejo que sigue en pie: si VITE_GAME_URL falta en el build,
 // el juego arrancaba contra ese servidor sin avisar de nada. Ahora el valor por defecto es el proyecto real.
-const GAME_URL = (import.meta.env.VITE_GAME_URL as string | undefined) ?? 'https://cyyetwpqyhoreyyefuda.supabase.co/functions/v1/game';
+const GAME_URL = (import.meta.env.VITE_GAME_URL as string | undefined) ?? 'https://dkocflhvoffcpvedoffo.supabase.co/functions/v1/game';
 const SESSION_KEY = 'pg-session-v1';
 
 export class ApiError extends Error {

@@ -16,6 +16,8 @@ import { isShiny } from './buffs';
 import { call, isOnline, type EncounterResult, type ServerMon, type ThrowResult } from '../../lib/api';
 import { t, onLangChange, type Key } from '../i18n';
 import { THROW_MS, ABSORB_MS, shakeMs, CAUGHT_HOLD_MS, BROKE_MS } from './capture/timing';
+import { gainCatch } from './progressStore';
+import { getLang } from '../i18n';
 
 /** Nivel de los monstruos salvajes (como en PokeGrass: "Lv 5"). */
 export const WILD_LEVEL = 5;
@@ -303,6 +305,7 @@ export async function throwBall() {
       const points = server?.points ?? 0, gotEgg = !!server?.egg, name = spawn.species.name;
       snap = { ...snap, phase: 'caught', result: 'caught', caught, caughtSpecies, collection, message: say(() => t('capture.gotcha', { name }) + (disc ? t('capture.firstInWorld', disc) : '') + (points ? t('capture.pts', { n: points }) : '') + (gotEgg ? t('capture.greenEgg') : '')) };
       if (server) window.dispatchEvent(new Event('pg:progress'));
+      gainCatch(spawn.id, name, getLang() === 'es');
       listeners.forEach((l) => l());
       persist();
       await wait(CAUGHT_HOLD_MS); // clic y estrellas en 3D antes de la carta

@@ -1,0 +1,364 @@
+/* Ficha del jugador, Poké Mart, perfil y avisos de experiencia.
+ *
+ * Mismo lenguaje que la captura (capture.css): cristal violeta oscuro con esquinas redondas, luz cálida y
+ * mucho movimiento pequeño — las bolas flotan, el monedero cuenta, las cifras saltan. El Mart lleva toldo
+ * a rayas y un letrero, para que se lea como tienda nada más abrirlo.
+ */
+:root {
+  --hb-ink: #160e2a;
+  --hb-glass: linear-gradient(180deg, rgba(34, 22, 62, 0.95), rgba(19, 12, 38, 0.97));
+  --hb-line: rgba(255, 255, 255, 0.1);
+  --hb-cream: #fff6e6;
+  --hb-dim: #b9add6;
+  --hb-gold: #ffc23d;
+  --hb-gold2: #ffe39a;
+  --hb-violet: #a66bff;
+  --hb-body: var(--ex-body, 'Barlow Condensed', system-ui, sans-serif);
+  --hb-title: var(--ex-title, 'Cinzel', Georgia, serif);
+}
+
+/* ---------------------------------------------------------------- la bola */
+.pb {
+  position: relative; display: inline-block; flex: none; border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.85) 0 7%, rgba(255, 255, 255, 0) 16%),
+    linear-gradient(180deg, var(--c) 0 45%, #1b1530 45% 55%, #f4f1ea 55%);
+  box-shadow:
+    inset -0.12em -0.16em 0.3em rgba(0, 0, 0, 0.38),
+    inset 0.1em 0.1em 0.2em rgba(255, 255, 255, 0.35),
+    0 0.18em 0.35em rgba(0, 0, 0, 0.35);
+  font-size: 40px;
+}
+/* El botón del centro, con su aro oscuro. */
+.pb::before {
+  content: ''; position: absolute; left: 50%; top: 50%; width: 28%; height: 28%; transform: translate(-50%, -50%);
+  border-radius: 50%; background: radial-gradient(circle at 40% 35%, #fff, #dcd6cc);
+  box-shadow: 0 0 0 0.06em #1b1530, inset 0 -0.03em 0.05em rgba(0, 0, 0, 0.25);
+}
+/* Detalles de cada bola encima del hemisferio de color. */
+.pb-super {
+  background:
+    radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.85) 0 7%, rgba(255, 255, 255, 0) 16%),
+    linear-gradient(90deg, transparent 0 18%, #e2423a 18% 30%, transparent 30% 70%, #e2423a 70% 82%, transparent 82%) top / 100% 45% no-repeat,
+    linear-gradient(180deg, var(--c) 0 45%, #1b1530 45% 55%, #f4f1ea 55%);
+}
+.pb-hyper {
+  background:
+    radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.85) 0 7%, rgba(255, 255, 255, 0) 16%),
+    linear-gradient(180deg, transparent 0 14%, #ffd84a 14% 22%, transparent 22%) top / 100% 45% no-repeat,
+    linear-gradient(180deg, var(--c) 0 45%, #1b1530 45% 55%, #f4f1ea 55%);
+}
+.pb-hood {
+  background:
+    radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.95) 0 8%, rgba(255, 255, 255, 0) 18%),
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0 4%, transparent 4% 10%) top / 100% 45% no-repeat,
+    linear-gradient(180deg, var(--c) 0 45%, #1b1530 45% 55%, #2a1e3c 55%);
+  box-shadow:
+    inset -0.12em -0.16em 0.3em rgba(0, 0, 0, 0.4), inset 0.1em 0.1em 0.2em rgba(255, 255, 255, 0.4),
+    0 0 0.4em rgba(255, 194, 61, 0.55), 0 0.18em 0.35em rgba(0, 0, 0, 0.35);
+}
+.pb.float { animation: pbFloat 2.6s ease-in-out infinite; }
+@keyframes pbFloat { 0%, 100% { transform: translateY(0) rotate(-6deg); } 50% { transform: translateY(-6px) rotate(6deg); } }
+
+.coin {
+  display: inline-block; flex: none; border-radius: 50%; vertical-align: -0.2em;
+  background: radial-gradient(circle at 35% 30%, #fff6c8 0 12%, #ffd34d 30%, #e09a12 80%);
+  box-shadow: inset 0 0 0 2px rgba(150, 90, 10, 0.55), 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+/* ---------------------------------------------------------------- ficha del HUD */
+.hb-chip { position: fixed; left: 16px; top: 58px; z-index: 60; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.hb-chip .me {
+  display: flex; align-items: center; gap: 10px; padding: 6px 14px 6px 6px; cursor: pointer;
+  background: var(--hb-glass); border: 1px solid var(--hb-line); border-radius: 999px; color: var(--hb-cream);
+  box-shadow: 0 10px 26px rgba(6, 2, 18, 0.45); transition: transform 0.15s;
+}
+.hb-chip .me:hover { transform: translateY(-2px); }
+.hb-chip .txt { display: grid; gap: 3px; text-align: left; min-width: 128px; }
+.hb-chip .txt b { font: 700 17px/1 var(--hb-title); }
+.hb-chip .txt small { font: 600 12px var(--hb-body); color: var(--hb-dim); letter-spacing: 0.4px; }
+.hb-chip .bar { height: 5px; border-radius: 99px; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
+.hb-chip .bar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--hb-violet), #6bd3ff); transition: width 0.6s cubic-bezier(0.2, 1, 0.3, 1); }
+.hb-chip .shop {
+  display: flex; align-items: center; gap: 8px; padding: 7px 12px 7px 8px; cursor: pointer;
+  background: var(--hb-glass); border: 1px solid var(--hb-line); border-radius: 999px; color: var(--hb-cream);
+  font: 700 14px var(--hb-body); letter-spacing: 1.2px; text-transform: uppercase; box-shadow: 0 8px 20px rgba(6, 2, 18, 0.4);
+}
+.hb-chip .shop:hover .pb { animation: pbWiggle 0.5s ease-in-out; }
+.hb-chip .shop em { display: inline-flex; align-items: center; gap: 4px; margin-left: 4px; font-style: normal; color: var(--hb-gold2); }
+@keyframes pbWiggle { 25% { transform: rotate(-18deg); } 75% { transform: rotate(16deg); } }
+
+/* Anillo de nivel alrededor del retrato. */
+.ring { position: relative; display: inline-grid; place-items: center; flex: none; }
+.ring svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+.ring .trk { fill: none; stroke: rgba(255, 255, 255, 0.12); }
+.ring .val { fill: none; stroke: url(#none); stroke: var(--hb-violet); stroke-linecap: round; transition: stroke-dashoffset 0.9s cubic-bezier(0.2, 1, 0.3, 1); filter: drop-shadow(0 0 4px rgba(166, 107, 255, 0.8)); }
+.ring .pic {
+  position: absolute; inset: 12%; display: grid; place-items: center; overflow: hidden; border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, #4a3478, #1d1238);
+}
+.ring .pic img { width: 120%; height: 120%; object-fit: cover; object-position: 50% 20%; }
+.ring .pic i { font-style: normal; font-size: 1.6em; }
+
+/* ---------------------------------------------------------------- telón de fondo de los paneles */
+.hb-back {
+  position: fixed; inset: 0; z-index: 85; display: grid; place-items: center; padding: 16px;
+  background: radial-gradient(circle at 50% 40%, rgba(60, 30, 110, 0.55), rgba(6, 3, 14, 0.78));
+  animation: hbFade 0.25s ease-out both;
+}
+@keyframes hbFade { from { opacity: 0; } }
+.hb-back .x {
+  position: absolute; right: 14px; top: 14px; z-index: 3; width: 34px; height: 34px; cursor: pointer; border-radius: 50%;
+  color: var(--hb-cream); background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.18); font-size: 15px;
+}
+
+/* ---------------------------------------------------------------- Poké Mart */
+.hb-mart {
+  position: relative; width: min(820px, 100%); max-height: calc(100vh - 32px); overflow: auto;
+  color: var(--hb-cream); font-family: var(--hb-body); border-radius: 26px;
+  background: var(--hb-glass); border: 1px solid var(--hb-line);
+  box-shadow: 0 40px 80px rgba(4, 1, 12, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  animation: hbPop 0.4s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+@keyframes hbPop { from { opacity: 0; transform: translateY(24px) scale(0.96); } }
+/* Toldo de tienda a rayas, con el borde festoneado. */
+.hb-mart .awning {
+  height: 34px; border-radius: 26px 26px 0 0;
+  background: repeating-linear-gradient(90deg, #e2423a 0 34px, #fff4e2 34px 68px);
+  -webkit-mask: radial-gradient(17px 12px at 17px 100%, transparent 98%, #000) 0 0 / 34px 100% repeat-x;
+  mask: radial-gradient(17px 12px at 17px 100%, transparent 98%, #000) 0 0 / 34px 100% repeat-x;
+  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.25);
+}
+.hb-mart header { display: flex; align-items: center; gap: 14px; padding: 14px 22px 4px; }
+.hb-mart .x { position: static; margin-left: 4px; }
+.hb-mart .sign b {
+  display: inline-block; padding: 6px 18px; border-radius: 12px; font: 800 26px/1 var(--hb-title); letter-spacing: 1px;
+  color: #2a1606; background: linear-gradient(180deg, var(--hb-gold2), var(--hb-gold));
+  box-shadow: 0 0 0 3px #fff4d2, 0 8px 18px rgba(255, 194, 61, 0.35); transform: rotate(-2deg);
+}
+.hb-mart .purse {
+  display: inline-flex; align-items: center; gap: 7px; margin-left: auto; padding: 7px 14px; border-radius: 999px;
+  background: rgba(255, 194, 61, 0.12); border: 1px solid rgba(255, 194, 61, 0.35);
+}
+.hb-mart .purse b { font: 800 22px var(--hb-body); color: var(--hb-gold2); font-variant-numeric: tabular-nums; }
+.hb-mart .purse small { font: 600 12px var(--hb-body); color: var(--hb-dim); text-transform: uppercase; letter-spacing: 1px; }
+
+.shelf { display: grid; grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); gap: 12px; padding: 14px 22px 18px; }
+.good {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 12px 12px; overflow: hidden;
+  border-radius: 20px; text-align: center; border: 1px solid rgba(255, 255, 255, 0.08);
+  background: radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--c) 22%, transparent), transparent 70%), rgba(255, 255, 255, 0.04);
+  animation: hbCard 0.5s calc(var(--i) * 0.04s) cubic-bezier(0.2, 1.3, 0.4, 1) both;
+  transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
+}
+@keyframes hbCard { from { opacity: 0; transform: translateY(18px) scale(0.94); } }
+.good:hover { transform: translateY(-4px); border-color: color-mix(in srgb, var(--c) 60%, transparent); box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35), 0 0 30px color-mix(in srgb, var(--c) 25%, transparent); }
+.good:hover .pb { animation: pbWiggle 0.6s ease-in-out; }
+.good.poor { filter: saturate(0.5); }
+.good .stage { position: relative; display: grid; place-items: center; height: 82px; width: 100%; }
+.good .stack { position: relative; display: inline-block; width: 92px; height: 70px; }
+.good .stack .pb { position: absolute; }
+.good .stack .pb:nth-child(1) { left: 0; bottom: 0; transform: rotate(-14deg); }
+.good .stack .pb:nth-child(2) { right: 0; bottom: 0; transform: rotate(12deg); }
+.good .stack .pb:nth-child(3) { left: 50%; top: -6px; margin-left: -26px; }
+.good .qty {
+  position: absolute; right: 6px; bottom: 2px; padding: 2px 8px; border-radius: 99px; font: 800 13px var(--hb-body); font-style: normal;
+  color: #1a1030; background: #fff4e2; box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+}
+.good .ribbon {
+  position: absolute; left: -32px; top: 12px; width: 110px; padding: 3px 0; transform: rotate(-38deg);
+  font: 800 12px var(--hb-body); color: #1a1030; background: linear-gradient(90deg, #7fe0a8, #b6f5cf); box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+}
+.good .nm { font: 700 17px/1.1 var(--hb-title); }
+.good .ds { min-height: 2.6em; font: 500 13px/1.3 var(--hb-body); color: var(--hb-dim); }
+.good .pw { font: 700 11px var(--hb-body); letter-spacing: 1.2px; text-transform: uppercase; color: var(--c); }
+.good .price {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 6px; padding: 9px 0; cursor: pointer;
+  border: 0; border-radius: 14px; font: 800 17px var(--hb-body); color: #2a1606;
+  background: linear-gradient(180deg, var(--hb-gold2), var(--hb-gold)); box-shadow: 0 6px 16px rgba(255, 194, 61, 0.3), inset 0 -3px 0 rgba(0, 0, 0, 0.15);
+  transition: transform 0.12s;
+}
+.good .price:hover:not(:disabled) { transform: translateY(-1px); }
+.good .price:active:not(:disabled) { transform: translateY(2px); }
+.good .price:disabled { opacity: 0.4; cursor: default; }
+/* Compra: destello del color de la bola y el cartelito que sube. */
+.good .burst {
+  position: absolute; inset: 0; pointer-events: none; border-radius: 20px;
+  background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--c) 70%, #fff), transparent 60%);
+  animation: hbBurst 0.6s ease-out both;
+}
+@keyframes hbBurst { from { opacity: 0.9; transform: scale(0.6); } to { opacity: 0; transform: scale(1.3); } }
+.good .pop {
+  position: absolute; left: 50%; top: 40px; transform: translateX(-50%); pointer-events: none; white-space: nowrap;
+  padding: 4px 10px; border-radius: 99px; font: 800 14px var(--hb-body); color: #1a1030; background: #fff4e2;
+  animation: hbRise 1.1s cubic-bezier(0.2, 1.2, 0.4, 1) both;
+}
+@keyframes hbRise { 0% { opacity: 0; transform: translate(-50%, 10px) scale(0.6); } 20% { opacity: 1; transform: translate(-50%, 0) scale(1.08); } 100% { opacity: 0; transform: translate(-50%, -38px) scale(1); } }
+/* El radar: un disco con barrido. */
+.good .radar {
+  position: relative; width: 62px; height: 62px; border-radius: 50%; font-style: normal;
+  background: radial-gradient(circle, rgba(79, 209, 197, 0.25) 0 30%, transparent 31%), radial-gradient(circle, transparent 0 58%, rgba(79, 209, 197, 0.5) 59% 62%, transparent 63%), #0f2a32;
+  box-shadow: 0 0 0 3px rgba(79, 209, 197, 0.5), 0 0 22px rgba(79, 209, 197, 0.4);
+  overflow: hidden;
+}
+.good .radar > i:first-child { position: absolute; inset: 0; background: conic-gradient(from 0deg, rgba(79, 209, 197, 0.65), transparent 60deg); animation: hbSweep 2s linear infinite; }
+.good .radar > i:last-child { position: absolute; left: 62%; top: 28%; width: 8px; height: 8px; border-radius: 50%; background: #ffd84a; box-shadow: 0 0 8px #ffd84a; animation: hbBlip 2s ease-in-out infinite; }
+@keyframes hbSweep { to { transform: rotate(360deg); } }
+@keyframes hbBlip { 0%, 60% { opacity: 0; } 70% { opacity: 1; } 100% { opacity: 0; } }
+
+.hb-mart footer {
+  display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: center; padding: 14px 22px 20px;
+  border-top: 1px solid var(--hb-line); background: rgba(0, 0, 0, 0.18); border-radius: 0 0 26px 26px;
+}
+.hb-mart .bag b { display: block; margin-bottom: 6px; font: 700 12px var(--hb-body); letter-spacing: 2px; text-transform: uppercase; color: var(--hb-dim); }
+.hb-mart .slots { display: flex; gap: 10px; }
+.hb-mart .slot { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px 5px 6px; border-radius: 99px; background: rgba(255, 255, 255, 0.06); }
+.hb-mart .slot em { font: 800 15px var(--hb-body); font-style: normal; font-variant-numeric: tabular-nums; }
+.hb-mart .slot .hop { display: inline-flex; animation: hbHop 0.6s cubic-bezier(0.2, 1.6, 0.4, 1); }
+@keyframes hbHop { 0% { transform: translateY(-26px) scale(1.4); } 60% { transform: translateY(2px) scale(0.92); } 100% { transform: none; } }
+.hb-mart .earn { margin: 0; font: 500 14px/1.35 var(--hb-body); color: var(--hb-dim); }
+.hb-mart .earn .warn { color: #ffb4a8; font-weight: 700; }
+
+/* ---------------------------------------------------------------- perfil */
+.hb-profile {
+  position: relative; display: grid; grid-template-columns: 290px 1fr; width: min(900px, 100%); max-height: calc(100vh - 32px); overflow: hidden;
+  color: var(--hb-cream); font-family: var(--hb-body); border-radius: 26px;
+  background: var(--hb-glass); border: 1px solid var(--hb-line);
+  box-shadow: 0 40px 80px rgba(4, 1, 12, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  animation: hbPop 0.4s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+.hb-profile .id {
+  display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 30px 22px 24px; text-align: center;
+  background: radial-gradient(120% 70% at 50% 0%, rgba(166, 107, 255, 0.35), transparent 60%), rgba(0, 0, 0, 0.2);
+  border-right: 1px solid var(--hb-line);
+}
+.hb-profile .id .ring { margin-bottom: 8px; }
+.hb-profile .lvchip {
+  position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); white-space: nowrap;
+  padding: 4px 12px; border-radius: 99px; font: 800 13px var(--hb-body); letter-spacing: 1px; text-transform: uppercase;
+  color: #1a1030; background: linear-gradient(180deg, #d8c2ff, var(--hb-violet)); box-shadow: 0 6px 14px rgba(166, 107, 255, 0.45);
+}
+.hb-profile h2 { margin: 6px 0 0; font: 700 30px/1 var(--hb-title); }
+.hb-profile .title { margin: 0; font: 600 14px var(--hb-body); letter-spacing: 1.6px; text-transform: uppercase; color: var(--hb-gold2); }
+.hb-profile .xpbar { width: 100%; margin-top: 12px; display: grid; gap: 4px; }
+.hb-profile .xpbar .track { height: 12px; border-radius: 99px; overflow: hidden; background: rgba(255, 255, 255, 0.1); box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4); }
+.hb-profile .xpbar .track i {
+  display: block; height: 100%; border-radius: 99px;
+  background: linear-gradient(90deg, var(--hb-violet), #6bd3ff, #7fe0a8); background-size: 200% 100%;
+  animation: hbShine 3s linear infinite; transition: width 1s cubic-bezier(0.2, 1, 0.3, 1);
+}
+@keyframes hbShine { to { background-position: -200% 0; } }
+.hb-profile .xpbar span { font: 700 15px var(--hb-body); }
+.hb-profile .xpbar small { font: 500 12px var(--hb-body); color: var(--hb-dim); }
+.hb-profile .mini { display: flex; gap: 14px; margin-top: 10px; font: 500 14px var(--hb-body); color: var(--hb-dim); }
+.hb-profile .mini b { color: var(--hb-cream); }
+.hb-profile .addr { margin-top: 8px; padding: 4px 10px; border-radius: 8px; font-size: 12px; color: var(--hb-dim); background: rgba(255, 255, 255, 0.06); }
+
+.hb-profile .body { padding: 26px 26px 24px; overflow: auto; }
+.hb-profile h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font: 700 13px var(--hb-body); letter-spacing: 2.4px; text-transform: uppercase; color: var(--hb-dim); }
+.hb-profile h3:not(:first-child) { margin-top: 22px; }
+.hb-profile h3 em { padding: 1px 8px; border-radius: 99px; font-style: normal; color: #1a1030; background: var(--hb-gold2); }
+.hb-profile .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.hb-profile .stat {
+  padding: 12px; border-radius: 16px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.06);
+  animation: hbCard 0.45s calc(var(--i) * 0.05s) cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+.hb-profile .stat b { display: block; font: 800 28px/1 var(--hb-body); font-variant-numeric: tabular-nums; }
+.hb-profile .stat span { font: 600 12px var(--hb-body); letter-spacing: 1px; text-transform: uppercase; color: var(--hb-dim); }
+.hb-profile .badges { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.hb-profile .badge {
+  display: grid; justify-items: center; gap: 4px; padding: 14px 8px 12px; text-align: center; border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04); border: 1px dashed rgba(255, 255, 255, 0.14); opacity: 0.55;
+}
+.hb-profile .badge i {
+  display: grid; place-items: center; width: 52px; height: 52px; font-style: normal; font-size: 22px; color: #1a1030;
+  background: color-mix(in srgb, var(--c) 30%, #2a2140); clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+}
+.hb-profile .badge span { font: 700 14px/1.15 var(--hb-title); }
+.hb-profile .badge small { font: 600 11px var(--hb-body); letter-spacing: 1px; text-transform: uppercase; color: var(--hb-dim); }
+.hb-profile .badge.on { opacity: 1; border-style: solid; border-color: color-mix(in srgb, var(--c) 55%, transparent); background: radial-gradient(circle at 50% 20%, color-mix(in srgb, var(--c) 25%, transparent), transparent 70%); }
+.hb-profile .badge.on i { background: var(--c); box-shadow: 0 0 20px var(--c); animation: hbBadge 2.4s ease-in-out infinite; }
+@keyframes hbBadge { 50% { transform: scale(1.08) rotate(6deg); } }
+.hb-profile .notes, .hb-profile .log { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.hb-profile .notes li { padding: 10px 12px; border-radius: 14px; background: #fff8ea; color: #2a1a3a; border-left: 4px solid var(--hb-violet); }
+.hb-profile .notes b { font: 700 13px var(--hb-body); letter-spacing: 1px; text-transform: uppercase; color: #6a4bb0; }
+.hb-profile .notes p { margin: 3px 0 0; font: 600 15px/1.35 var(--hb-body); }
+.hb-profile .log li { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 8px 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.04); }
+.hb-profile .log span { font: 600 14px var(--hb-body); }
+.hb-profile .log b { display: inline-flex; align-items: center; gap: 4px; font: 800 13px var(--hb-body); color: #b6f5cf; }
+.hb-profile .log small { grid-column: 1 / -1; font: 500 11px var(--hb-body); color: var(--hb-dim); }
+.hb-profile .empty { margin: 0; padding: 12px; border-radius: 12px; font: 500 14px/1.4 var(--hb-body); color: var(--hb-dim); background: rgba(255, 255, 255, 0.03); }
+
+/* ---------------------------------------------------------------- avisos de experiencia */
+.hb-toasts { position: fixed; left: 50%; top: 92px; z-index: 260; transform: translateX(-50%); display: grid; justify-items: center; gap: 8px; pointer-events: none; }
+.hb-toast {
+  display: inline-flex; align-items: center; gap: 10px; padding: 8px 16px; border-radius: 999px; white-space: nowrap;
+  color: var(--hb-cream); font-family: var(--hb-body); background: var(--hb-glass); border: 1px solid rgba(166, 107, 255, 0.45);
+  box-shadow: 0 10px 30px rgba(6, 2, 18, 0.5), 0 0 24px rgba(166, 107, 255, 0.3);
+  animation: hbToast 2.2s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+.hb-toast b { font: 800 18px var(--hb-body); color: #d8c2ff; }
+.hb-toast em { display: inline-flex; align-items: center; gap: 4px; font: 800 15px var(--hb-body); font-style: normal; color: var(--hb-gold2); }
+.hb-toast span { font: 600 14px var(--hb-body); color: var(--hb-dim); }
+@keyframes hbToast { 0% { opacity: 0; transform: translateY(16px) scale(0.8); } 12% { opacity: 1; transform: translateY(0) scale(1.06); } 20% { transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-24px); } }
+
+.hb-level {
+  position: relative; display: grid; justify-items: center; gap: 2px; padding: 18px 40px 16px; border-radius: 24px; overflow: hidden;
+  color: #2a1606; background: linear-gradient(180deg, var(--hb-gold2), var(--hb-gold));
+  box-shadow: 0 0 0 4px #fff4d2, 0 0 70px rgba(255, 194, 61, 0.7), 0 20px 50px rgba(0, 0, 0, 0.5);
+  animation: hbLevel 3.6s cubic-bezier(0.2, 1.5, 0.4, 1) both;
+}
+.hb-level .rays {
+  position: absolute; left: 50%; top: 50%; width: 400px; height: 400px; margin: -200px 0 0 -200px;
+  background: repeating-conic-gradient(rgba(255, 255, 255, 0.4) 0 8deg, transparent 8deg 20deg); animation: hbSweep 6s linear infinite;
+}
+.hb-level small, .hb-level b, .hb-level span { position: relative; }
+.hb-level small { font: 800 13px var(--hb-body); letter-spacing: 3px; text-transform: uppercase; }
+.hb-level b { font: 800 40px/1 var(--hb-title); }
+.hb-level span { font: 700 15px var(--hb-body); letter-spacing: 1px; }
+@keyframes hbLevel { 0% { opacity: 0; transform: scale(0.3) rotate(-8deg); } 12% { opacity: 1; transform: scale(1.1) rotate(2deg); } 20% { transform: scale(1) rotate(0); } 85% { opacity: 1; } 100% { opacity: 0; transform: translateY(-20px) scale(0.95); } }
+
+@media (max-width: 760px) {
+  .hb-chip { top: 52px; left: 10px; }
+  .hb-chip .txt { min-width: 100px; }
+  .hb-profile { grid-template-columns: 1fr; overflow: auto; }
+  .hb-profile .id { border-right: 0; border-bottom: 1px solid var(--hb-line); }
+  .hb-profile .stats, .hb-profile .badges { grid-template-columns: repeat(2, 1fr); }
+  .shelf { grid-template-columns: repeat(2, 1fr); padding: 12px; }
+  .hb-mart footer { grid-template-columns: 1fr; }
+}
+
+/* ---------------------------------------------------------------- wallet y pago en MON */
+.mon {
+  display: inline-grid; place-items: center; flex: none; width: 1.25em; height: 1.25em; border-radius: 50%; font: 800 0.7em/1 var(--hb-body); font-style: normal;
+  color: #fff; background: radial-gradient(circle at 35% 30%, #c9a8ff, #836ef9 60%, #5a3fd6); box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.35), 0 0 8px rgba(131, 110, 249, 0.6);
+}
+.hb-chip .wal {
+  display: flex; align-items: center; gap: 8px; padding: 7px 14px 7px 8px; cursor: pointer; border-radius: 999px; color: var(--hb-cream);
+  background: linear-gradient(180deg, rgba(131, 110, 249, 0.38), rgba(90, 63, 214, 0.28)); border: 1px solid rgba(160, 140, 255, 0.5);
+  font: 700 14px var(--hb-body); letter-spacing: 1px; text-transform: uppercase; box-shadow: 0 8px 20px rgba(6, 2, 18, 0.4);
+}
+.hb-chip .wal:hover:not(:disabled) { filter: brightness(1.15); }
+.hb-chip .wal.on { background: rgba(255, 255, 255, 0.07); border-color: var(--hb-line); text-transform: none; letter-spacing: 0.3px; }
+.hb-chip .wal em { margin-left: 8px; font-style: normal; color: var(--hb-gold2); }
+.paymode { display: inline-flex; margin-left: auto; padding: 3px; border-radius: 999px; background: rgba(255, 255, 255, 0.07); border: 1px solid var(--hb-line); }
+.paymode button {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; cursor: pointer; border: 0; border-radius: 999px; background: transparent;
+  color: var(--hb-dim); font: 800 13px var(--hb-body); letter-spacing: 1.2px; text-transform: uppercase; transition: background 0.2s, color 0.2s;
+}
+.paymode button.on { color: #1a1030; background: linear-gradient(180deg, var(--hb-gold2), var(--hb-gold)); }
+.paymode button.on:last-child { color: #fff; background: linear-gradient(180deg, #a590ff, #6a4bf0); }
+.hb-mart .purse { margin-left: 0; }
+.good.paying { box-shadow: 0 0 0 2px var(--hb-violet), 0 0 30px rgba(131, 110, 249, 0.5); }
+.hb-mart .earn.pay { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
+.hb-mart .earn.pay .ok { color: #b6f5cf; }
+.hb-mart .earn a { color: #c9b8ff; font-weight: 700; }
+.hb-mart .earn .saved { color: #b6f5cf; }
+.hb-mart .earn .spin {
+  display: inline-block; width: 11px; height: 11px; margin-right: 4px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.25); border-top-color: var(--hb-violet);
+  animation: hbSweep 0.7s linear infinite;
+}
+.hb-profile .monspent { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; font: 600 14px var(--hb-body); color: var(--hb-dim); }
+.hb-profile .syncnote { margin-top: 10px; padding: 4px 10px; border-radius: 8px; font: 600 12px/1.3 var(--hb-body); color: var(--hb-dim); background: rgba(255, 255, 255, 0.05); }
+.hb-profile .syncnote.on { color: #b6f5cf; background: rgba(127, 224, 168, 0.12); }
+@media (max-width: 760px) { .paymode { margin-left: 0; order: 3; } .hb-mart header { flex-wrap: wrap; } }

@@ -15,6 +15,7 @@ import {
   hatchLine, rollMissions, type Egg, type EggKind, type Missions, type Progress,
 } from './quests.ts';
 import { makeFeatures } from './features.ts';
+import { makeExplore } from './explore.ts';
 
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const db = createClient(Deno.env.get('SUPABASE_URL')!, SERVICE_KEY, { auth: { persistSession: false } });
@@ -55,6 +56,7 @@ const IP_RATE: Record<string, [number, number]> = {
   nonce: [30, 600], wallet: [30, 600], recover: [10, 3600], board: [60, 60], mart: [60, 60], token: [60, 60],
   referral: [10, 3600], 'trade-offer': [30, 600], 'trainer-find': [30, 60], discovered: [60, 60],
   'market-list': [30, 600], 'market-quote': [30, 600], 'market-buy': [30, 600], 'arena-start': [40, 600], 'gym-start': [40, 600],
+  'mon-mart': [60, 60], 'xp-board': [60, 60],
 };
 const WEEK0 = Date.UTC(2026, 0, 5); // un lunes
 const weekOf = (t: number) => Math.floor((t - WEEK0) / (7 * 864e5));
@@ -1333,6 +1335,8 @@ const F = makeFeatures({
   fresh: async () => (await encounterable()).all, progressWin: (t: any) => progressed(t, [{ k: 'win', n: 1 }]), mainnet: MAINNET,
 });
 
+const X = makeExplore({ db, fail: (m, s) => new Fail(m, s), envOr, saveTrainer: saveTrainer as any, publicTrainer: publicTrainer as any });
+
 // ---------- entrada ----------
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
@@ -1360,6 +1364,7 @@ Deno.serve(async (req) => {
         return json(await tick());
       }
       case 'mart': return json(martInfo());
+      case 'mon-mart': case 'xp-board': return json(await X.handlePublic(a));
       case 'token': return json(await tokenInfo());
       case 'discovered': return json(await F.discovered(Number(body.offset) || 0));
       case 'board': {
@@ -1413,7 +1418,7 @@ Deno.serve(async (req) => {
         return json({ trainer: publicTrainer(t) });
       }
       default: {
-        const r = await F.handle(a, t, body);
+        const r = (await X.handle(a, t, body)) ?? (await F.handle(a, t, body));
         if (r === undefined) throw new Fail('unknown action');
         return json(r);
       }

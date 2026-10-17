@@ -3,6 +3,7 @@ import { Scene } from './Scene';
 import { ExploreHUD } from './ui/ExploreHUD';
 import { AcademyUI } from './academy/AcademyUI';
 import { LectureCapture } from './ui/LectureCapture';
+import { ProgressToasts } from './ui/PlayerHub';
 import { CHARACTER_ROSTER, characterById, type RosterEntry } from './engine/avatar/characterRoster';
 
 /**
@@ -34,6 +35,8 @@ export const App: React.FC = () => {
       <ExploreHUD character={character} onCharacter={choose} />
       <LectureCapture />
       <AcademyUI />
+      {/* Siempre montado: la experiencia también salta en mitad de un combate del coliseo. */}
+      <ProgressToasts />
     </>
   );
 };

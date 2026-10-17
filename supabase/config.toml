@@ -1,4 +1,4 @@
-project_id = "cyyetwpqyhoreyyefuda"
+project_id = "dkocflhvoffcpvedoffo"
 
 # El juego llama a `game` sin header Authorization: la sesión va en `x-session` y la valida la propia
 # función contra la tabla `sessions` (ver trainerFromSession). Con verify_jwt activado —el valor por

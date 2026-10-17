@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Rotulos</title>
+<style>
+  html, body { margin: 0; padding: 0; width: 1280px; height: 720px; background: transparent; overflow: hidden; }
+  * { box-sizing: border-box; }
+
+  .frame { position: fixed; inset: 0; }
+
+  /* Velo bajo el rotulo: el metraje del juego es claro y el texto sin esto no se lee. */
+  .scrim { position: absolute; left: 0; right: 0; height: 46%; opacity: 0; }
+  .scrim.low { bottom: 0; background: linear-gradient(to top, rgba(6,5,4,.78), rgba(6,5,4,.45) 38%, transparent); }
+  .scrim.high { top: 0; background: linear-gradient(to bottom, rgba(6,5,4,.74), rgba(6,5,4,.40) 40%, transparent); }
+
+  .cap { position: absolute; left: 0; right: 0; text-align: center; opacity: 0; }
+  .cap .a {
+    font: 400 34px/1.28 "Hoefler Text", "Baskerville", "Iowan Old Style", Georgia, serif;
+    color: #f6f1e6; letter-spacing: .012em;
+    text-shadow: 0 0 26px rgba(0,0,0,.95), 0 1px 2px rgba(0,0,0,.9), 0 0 60px rgba(0,0,0,.6);
+  }
+  .cap .b {
+    margin-top: 11px;
+    font: 400 19px/1.35 "Hoefler Text", "Baskerville", "Iowan Old Style", Georgia, serif;
+    color: #e9e2d2; letter-spacing: .035em; opacity: 0;
+    text-shadow: 0 0 20px rgba(0,0,0,.95), 0 1px 2px rgba(0,0,0,.9);
+  }
+
+  /* Marca final. */
+  .end { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; opacity: 0; }
+  .end .w {
+    font: 400 70px/1 "Hoefler Text", "Baskerville", Georgia, serif; color: #f7f2e7;
+    letter-spacing: .055em; text-shadow: 0 0 40px rgba(255,236,196,.22), 0 0 90px rgba(0,0,0,.8);
+  }
+  .end .s {
+    margin-top: 20px; font: 400 11px/1 "SF Mono", Menlo, monospace; color: #cfc6b4;
+    letter-spacing: .34em; opacity: .72; text-transform: uppercase;
+  }
+
+  /* Interfaz de camara: lo que convierte el metraje en metraje grabado. */
+  .hud { position: absolute; inset: 0; font: 400 10px/1 "SF Mono", Menlo, monospace; color: #efe7d8;
+         letter-spacing: .24em; text-transform: uppercase; }
+  .hud span { position: absolute; opacity: .40; text-shadow: 0 1px 3px rgba(0,0,0,.9); white-space: nowrap; }
+  .tl { top: 22px; left: 26px; }
+  .tr { top: 22px; right: 26px; }
+  .bl { bottom: 22px; left: 26px; }
+  .br { bottom: 22px; right: 26px; }
+  .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #e2593f;
+         margin-right: 8px; vertical-align: 1px; }
+  .corner { position: absolute; width: 16px; height: 16px; border: 1px solid rgba(246,241,230,.30); opacity: .55; }
+  .c1 { top: 14px; left: 14px; border-right: 0; border-bottom: 0; }
+  .c2 { top: 14px; right: 14px; border-left: 0; border-bottom: 0; }
+  .c3 { bottom: 14px; left: 14px; border-right: 0; border-top: 0; }
+  .c4 { bottom: 14px; right: 14px; border-left: 0; border-top: 0; }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <div class="scrim low" id="scrimLow"></div>
+    <div class="scrim high" id="scrimHigh"></div>
+
+    <div class="cap" id="cap"><div class="a" id="capA"></div><div class="b" id="capB"></div></div>
+
+    <div class="end" id="end"><div class="w" id="endW"></div><div class="s" id="endS"></div></div>
+
+    <div class="hud" id="hud">
+      <i class="corner c1"></i><i class="corner c2"></i><i class="corner c3"></i><i class="corner c4"></i>
+      <span class="tl" id="hudTL"></span>
+      <span class="tr" id="hudTR"></span>
+      <span class="bl" id="hudBL"></span>
+      <span class="br" id="hudBR"></span>
+    </div>
+  </div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let TL = null;
+
+/** Curva de entrada y salida de cada rotulo: 0 fuera, 1 dentro. */
+const easeOut = (x) => 1 - Math.pow(1 - x, 3);
+const easeIn = (x) => x * x;
+function envelope(t, start, dur, inMs = 0.75, outMs = 0.6) {
+  if (t < start || t > start + dur) return 0;
+  const since = t - start, left = start + dur - t;
+  if (since < inMs) return easeOut(since / inMs);
+  if (left < outMs) return 1 - easeIn(1 - left / outMs);
+  return 1;
+}
+
+const pad = (n, w = 2) => String(n).padStart(w, '0');
+function timecode(t) {
+  const f = Math.floor(t * TL.fps) % TL.fps;
+  const s = Math.floor(t) % 60, m = Math.floor(t / 60);
+  return `${pad(m)}:${pad(s)}:${pad(f)}`;
+}
+
+/** Dibuja el fotograma del segundo `t`. Todo sale de `t`: dos llamadas iguales pintan lo mismo. */
+window.render = function render(t) {
+  const idx = Math.max(0, TL.clips.findIndex((c, i) => {
+    const next = TL.clips[i + 1];
+    return t >= c.start && (!next || t < next.start);
+  }));
+  const clip = TL.clips[idx];
+
+  // --- rotulos
+  let shown = null, k = 0;
+  for (const c of TL.clips) {
+    for (const cap of c.caps || []) {
+      const v = envelope(t, c.start + cap.at, cap.dur);
+      if (v > k) { k = v; shown = { cap, at: c.start + cap.at }; }
+    }
+  }
+
+  const cap = $('cap'), end = $('end');
+  if (shown && shown.cap.wordmark) {
+    cap.style.opacity = 0;
+    $('scrimLow').style.opacity = 0; $('scrimHigh').style.opacity = 0;
+    end.style.opacity = k;
+    $('endW').textContent = shown.cap.wordmark;
+    $('endS').textContent = shown.cap.b || '';
+    $('endW').style.transform = `translateY(${(1 - k) * 10}px) scale(${0.985 + k * 0.015})`;
+    $('endS').style.opacity = 0.72 * envelope(t, shown.at + 0.9, Math.max(0.1, shown.cap.dur - 0.9));
+  } else {
+    end.style.opacity = 0;
+    if (!shown) {
+      cap.style.opacity = 0;
+      $('scrimLow').style.opacity = 0; $('scrimHigh').style.opacity = 0;
+    } else {
+      const { cap: c0, at } = shown;
+      const low = c0.pos !== 'high';
+      cap.style.opacity = k;
+      cap.style.top = low ? '' : '12%';
+      cap.style.bottom = low ? (c0.pos === 'bottom' ? '5%' : '16%') : '';
+      cap.style.transform = `translateY(${(1 - k) * 9}px)`;
+      $('capA').textContent = c0.a || '';
+      $('capB').textContent = c0.b || '';
+      $('capB').style.opacity = c0.b ? envelope(t, at + 0.85, Math.max(0.2, c0.dur - 0.85)) : 0;
+      $('scrimLow').style.opacity = low ? k * 0.95 : 0;
+      $('scrimHigh').style.opacity = low ? 0 : k * 0.95;
+    }
+  }
+
+  // --- interfaz de camara
+  const hud = $('hud');
+  const fin = Math.min(1, Math.max(0, (t - 0.6) / 1.2));
+  hud.style.opacity = (0.9 * fin) * (t > TL.total - 1.2 ? Math.max(0, (TL.total - t) / 1.2) : 1);
+  $('hudTL').textContent = 'pokemonad · monad testnet 10143';
+  const blink = (Math.floor(t * 1.6) % 2) === 0 ? 1 : 0.15;
+  $('hudTR').innerHTML = `<i class="dot" style="opacity:${blink}"></i>rec ${timecode(t)}`;
+  $('hudBL').textContent = `plano ${pad(idx + 1)} / ${pad(TL.clips.length)}`;
+  $('hudBR').textContent = clip.shot ? clip.shot.replace(/^\d+-/, '').replace(/-/g, ' ') : 'fin';
+};
+
+window.setTimeline = (tl) => { TL = tl; };
+</script>
+</body>
+</html>

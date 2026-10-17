@@ -14,6 +14,8 @@
 // y te pegan — y en el fallo se para la acción para explicar por qué, que es lo que convierte perder vida
 // en aprender algo.
 import { useSyncExternalStore } from 'react';
+import { gainAnswer, gainBattle } from '../world/progressStore';
+import { getLang } from '../i18n';
 import type { Address } from 'viem';
 import { BOSSES, bossById, pickQuestions, type Boss, type Question } from './questions';
 import { badgesOf, beginAttempt, connect, enrol, mintBadge, onChainReady, type Session } from './monad';
@@ -283,6 +285,8 @@ async function resolveTurn(choice: number, ok: boolean) {
   }
   if (ko) { fx.kick = 1; fx.slow = 1.5; }
   const q = b.queue[b.i];
+  // La experiencia llega con el golpe, no con el clic: el aviso "+25 XP" sale cuando la vida baja.
+  gainAnswer(ok, streak, getLang() === 'es', { boss: b.boss.id, qid: `${b.boss.id}:${qHash(q.q)}` });
   setBattle({
     anim: { ...b.anim!, phase: 'impact' },
     bossHp: ok ? Math.max(0, b.bossHp - 1) : b.bossHp,
@@ -316,10 +320,18 @@ export function nextTurn() {
   tick();
 }
 
+/** Id estable de una pregunta: hash corto de su enunciado (no tienen id propio). */
+function qHash(text: string) {
+  let h = 5381;
+  for (let i = 0; i < text.length; i++) h = ((h << 5) + h + text.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
+}
+
 function finish(win: boolean) {
   stopTimer();
   const b = s.battle!;
   setBattle({ turn: 'over', win, anim: null });
+  gainBattle(win, b.boss.name, getLang() === 'es', b.boss.id);
   if (win) {
     const badges = s.badges | (1 << b.boss.id);
     try { localStorage.setItem(SAVED_BADGES, String(badges)); } catch { /* sin storage */ }

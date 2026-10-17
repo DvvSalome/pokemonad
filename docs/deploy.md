@@ -150,3 +150,27 @@ for R in <REF_A> <REF_B>; do
     -H 'content-type: application/json' -d '{"action":"token"}'
 done
 ```
+
+## Progreso, historial y Poké Mart en MON (Monad)
+
+Tablas nuevas: `supabase/migrations/20261017120000_player_progress_mon_mart.sql` (`player_progress`,
+`player_history`, `quiz_answers`, `mart_catalog`, `mon_purchases`). Acciones nuevas de la función `game`
+(`supabase/functions/game/explore.ts`): `progress`, `progress-import`, `progress-answer`, `progress-battle`,
+`progress-catch`, `coin-buy`, `mon-buy` y las públicas `mon-mart` y `xp-board`.
+
+```bash
+supabase link --project-ref <ref>
+supabase db push                       # aplica TODAS las migraciones, incluida la nueva
+supabase functions deploy game --no-verify-jwt
+
+# Contrato de la tienda (cobra MON y lo reenvía a la tesorería)
+forge test
+forge create contracts/PokeMart.sol:PokeMart --constructor-args <TESORERIA> \
+  --keystore ~/.monskills/keystore/<id> --password "" --broadcast
+
+# Secrets de la función (el cliente no necesita la dirección: la pide con `mon-mart`)
+supabase secrets set MON_MART_CONTRACT=<direccion> MON_TREASURY=<tesoreria>
+```
+
+Sin `MON_MART_CONTRACT` la tienda acepta un envío directo de MON a `MON_TREASURY` por al menos el precio.
+Los precios se cambian en la tabla `mart_catalog` (y con `setPrice` en el contrato: tienen que coincidir).

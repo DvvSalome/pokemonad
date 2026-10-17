@@ -5,7 +5,8 @@ import { CHARACTER_ROSTER, type RosterEntry } from '../engine/avatar/characterRo
 import { useRunLock, setRunLock } from '../engine/avatar/useAvatarControls';
 import { useAcademy } from '../academy/academyStore';
 import { LangSwitch } from './LangSwitch';
-import { CatchPrompt, FieldShop } from './FieldPlay';
+import { CatchPrompt } from './FieldPlay';
+import { PlayerHub } from './PlayerHub';
 import { t, useT } from '../i18n';
 import './explore.css';
 
@@ -98,7 +99,7 @@ export const ExploreHUD: React.FC<{ character: RosterEntry; onCharacter: (c: Ros
       <ZoneBanner zone={zone} />
       <KeyHint />
       <CharacterPicker character={character} onPick={onCharacter} />
-      <FieldShop />
+      <PlayerHub character={character} />
       <CatchPrompt />
       <Minimap zone={zone} onOpen={() => setMap(true)} />
       {map && <RegionMap zone={zone} onClose={() => setMap(false)} />}
